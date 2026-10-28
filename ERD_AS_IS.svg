@@ -1,0 +1,333 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1290 860" width="1290" height="860" font-family="Pretendard, 'Malgun Gothic', 'Apple SD Gothic Neo', system-ui, sans-serif">
+<title>인계점 현행 ERD (as-is)</title>
+<style>
+  :root { --bg:#ffffff; --fg:#1f2328; --muted:#656d76; --box:#ffffff; --border:#d0d7de; --line:#57606a; --row:#f6f8fa;
+          --org:#dbeafe; --auth:#fde68a; --flow:#d1fae5; --store:#ede9fe; --pk:#b45309; --fk:#1d4ed8; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1117; --fg:#e6edf3; --muted:#8d96a0; --box:#161b22; --border:#30363d; --line:#8d96a0; --row:#1c2128;
+            --org:#1e3a5f; --auth:#5c4813; --flow:#14432f; --store:#3b2e5c; --pk:#f0b45b; --fk:#79b8ff; }
+  }
+  .bg { fill:var(--bg); }
+  .title { fill:var(--fg); font-size:20px; font-weight:700; }
+  .sub { fill:var(--muted); font-size:12px; }
+  .box { fill:var(--box); stroke:var(--border); stroke-width:1.2; }
+  .hdr-org { fill:var(--org); } .hdr-auth { fill:var(--auth); } .hdr-flow { fill:var(--flow); } .hdr-store { fill:var(--store); }
+  .tname { fill:var(--fg); font-size:14px; font-weight:700; }
+  .col { fill:var(--fg); font-size:12px; }
+  .typ { fill:var(--muted); font-size:11px; }
+  .pk { fill:var(--pk); font-size:10px; font-weight:700; }
+  .fk { fill:var(--fk); font-size:10px; font-weight:700; }
+  .zebra { fill:var(--row); }
+  .rel { fill:none; stroke:var(--line); stroke-width:1.3; }
+  .mk { fill:none; stroke:var(--line); stroke-width:1.3; }
+  .lbl { fill:var(--muted); font-size:10.5px; font-style:italic; }
+</style>
+<defs>
+  <marker id="one" viewBox="0 0 14 14" refX="0" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto">
+    <path class="mk" d="M5,1 V13 M9,1 V13"/>
+  </marker>
+  <marker id="many" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto">
+    <path class="mk" d="M2,7 L14,1 M2,7 L14,7 M2,7 L14,13 M0,1 V13"/>
+  </marker>
+</defs>
+<rect class="bg" width="1290" height="860"/>
+<text class="title" x="40" y="36">인계점 현행 ERD (as-is)</text>
+<text class="sub" x="40" y="56">원본 capstone 코드 기준 · DB FK 제약 없음 (선은 엔티티의 *_id 필드로 본 논리적 관계) · 출처: REVERSE_ENGINEERING.md 3장</text>
+<path class="rel" d="M165,178 V230" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M165,348 V400" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M165,498 V550" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M290,290 H325 V464 H360" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M290,320 H305 V664 H360" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M360,250 H345 V634 H290" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M485,278 V340" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M610,370 H625 V224 H680" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M610,400 H635 V484 H680" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M610,450 H625 V694 H680" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M610,590 H665 V244 H680" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M610,620 H650 V504 H680" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M440,678 V712 H540 V678" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M520,100 V70 H980 V164 H1000" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M560,100 V84 H960 V344 H1000" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M1125,420 V358" marker-start="url(#one)" marker-end="url(#many)"/>
+<path class="rel" d="M1125,518 V580" marker-start="url(#one)" marker-end="url(#many)"/>
+<g id="t-tb_group">
+<rect class="box" x="40" y="100" width="250" height="78" rx="6"/>
+<path class="hdr-org" d="M40.6,130 V106 Q40.6,100.6 46,100.6 H284 Q289.4,100.6 289.4,106 V130 Z"/>
+<text class="tname" x="52" y="120">tb_group</text>
+<text class="pk" x="50" y="148">PK</text>
+<text class="col" x="82" y="148">id</text>
+<text class="typ" x="280" y="148" text-anchor="end">bigint</text>
+<rect class="zebra" x="41" y="154" width="248" height="20"/>
+<text class="col" x="82" y="168">group_name</text>
+<text class="typ" x="280" y="168" text-anchor="end">varchar</text>
+</g>
+<g id="t-space">
+<rect class="box" x="40" y="230" width="250" height="118" rx="6"/>
+<path class="hdr-org" d="M40.6,260 V236 Q40.6,230.6 46,230.6 H284 Q289.4,230.6 289.4,236 V260 Z"/>
+<text class="tname" x="52" y="250">space</text>
+<text class="pk" x="50" y="278">PK</text>
+<text class="col" x="82" y="278">id</text>
+<text class="typ" x="280" y="278" text-anchor="end">bigint</text>
+<rect class="zebra" x="41" y="284" width="248" height="20"/>
+<text class="col" x="82" y="298">work_name</text>
+<text class="typ" x="280" y="298" text-anchor="end">varchar</text>
+<text class="col" x="82" y="318">space_code</text>
+<text class="typ" x="280" y="318" text-anchor="end">varchar</text>
+<rect class="zebra" x="41" y="324" width="248" height="20"/>
+<text class="fk" x="50" y="338">FK</text>
+<text class="col" x="82" y="338">group_id</text>
+<text class="typ" x="280" y="338" text-anchor="end">bigint</text>
+</g>
+<g id="t-approval">
+<rect class="box" x="40" y="400" width="250" height="98" rx="6"/>
+<path class="hdr-flow" d="M40.6,430 V406 Q40.6,400.6 46,400.6 H284 Q289.4,400.6 289.4,406 V430 Z"/>
+<text class="tname" x="52" y="420">approval</text>
+<text class="pk" x="50" y="448">PK</text>
+<text class="col" x="82" y="448">id</text>
+<text class="typ" x="280" y="448" text-anchor="end">bigint</text>
+<rect class="zebra" x="41" y="454" width="248" height="20"/>
+<text class="col" x="82" y="468">step_status</text>
+<text class="typ" x="280" y="468" text-anchor="end">enum</text>
+<text class="fk" x="50" y="488">FK</text>
+<text class="col" x="82" y="488">space_id</text>
+<text class="typ" x="280" y="488" text-anchor="end">bigint</text>
+</g>
+<g id="t-user_approval">
+<rect class="box" x="40" y="550" width="250" height="138" rx="6"/>
+<path class="hdr-flow" d="M40.6,580 V556 Q40.6,550.6 46,550.6 H284 Q289.4,550.6 289.4,556 V580 Z"/>
+<text class="tname" x="52" y="570">user_approval</text>
+<text class="pk" x="50" y="598">PK</text>
+<text class="col" x="82" y="598">id</text>
+<text class="typ" x="280" y="598" text-anchor="end">bigint</text>
+<rect class="zebra" x="41" y="604" width="248" height="20"/>
+<text class="col" x="82" y="618">approval_role</text>
+<text class="typ" x="280" y="618" text-anchor="end">enum</text>
+<text class="fk" x="50" y="638">FK</text>
+<text class="col" x="82" y="638">user_id</text>
+<text class="typ" x="280" y="638" text-anchor="end">bigint</text>
+<rect class="zebra" x="41" y="644" width="248" height="20"/>
+<text class="fk" x="50" y="658">FK</text>
+<text class="col" x="82" y="658">approval_id</text>
+<text class="typ" x="280" y="658" text-anchor="end">bigint</text>
+<text class="col" x="82" y="678">signed_at</text>
+<text class="typ" x="280" y="678" text-anchor="end">datetime</text>
+</g>
+<g id="t-user">
+<rect class="box" x="360" y="100" width="250" height="178" rx="6"/>
+<path class="hdr-auth" d="M360.6,130 V106 Q360.6,100.6 366,100.6 H604 Q609.4,100.6 609.4,106 V130 Z"/>
+<text class="tname" x="372" y="120">user</text>
+<text class="pk" x="370" y="148">PK</text>
+<text class="col" x="402" y="148">id</text>
+<text class="typ" x="600" y="148" text-anchor="end">bigint</text>
+<rect class="zebra" x="361" y="154" width="248" height="20"/>
+<text class="pk" x="370" y="168">UK</text>
+<text class="col" x="402" y="168">username</text>
+<text class="typ" x="600" y="168" text-anchor="end">varchar</text>
+<text class="col" x="402" y="188">password</text>
+<text class="typ" x="600" y="188" text-anchor="end">varchar</text>
+<rect class="zebra" x="361" y="194" width="248" height="20"/>
+<text class="col" x="402" y="208">name</text>
+<text class="typ" x="600" y="208" text-anchor="end">varchar</text>
+<text class="pk" x="370" y="228">UK</text>
+<text class="col" x="402" y="228">email</text>
+<text class="typ" x="600" y="228" text-anchor="end">varchar</text>
+<rect class="zebra" x="361" y="234" width="248" height="20"/>
+<text class="col" x="402" y="248">phone</text>
+<text class="typ" x="600" y="248" text-anchor="end">varchar</text>
+<text class="col" x="402" y="268">birth</text>
+<text class="typ" x="600" y="268" text-anchor="end">varchar</text>
+</g>
+<g id="t-user_space">
+<rect class="box" x="360" y="340" width="250" height="138" rx="6"/>
+<path class="hdr-org" d="M360.6,370 V346 Q360.6,340.6 366,340.6 H604 Q609.4,340.6 609.4,346 V370 Z"/>
+<text class="tname" x="372" y="360">user_space</text>
+<text class="pk" x="370" y="388">PK</text>
+<text class="col" x="402" y="388">id</text>
+<text class="typ" x="600" y="388" text-anchor="end">bigint</text>
+<rect class="zebra" x="361" y="394" width="248" height="20"/>
+<text class="col" x="402" y="408">role</text>
+<text class="typ" x="600" y="408" text-anchor="end">enum</text>
+<text class="col" x="402" y="428">status</text>
+<text class="typ" x="600" y="428" text-anchor="end">enum</text>
+<rect class="zebra" x="361" y="434" width="248" height="20"/>
+<text class="fk" x="370" y="448">FK</text>
+<text class="col" x="402" y="448">user_id</text>
+<text class="typ" x="600" y="448" text-anchor="end">bigint</text>
+<text class="fk" x="370" y="468">FK</text>
+<text class="col" x="402" y="468">space_id</text>
+<text class="typ" x="600" y="468" text-anchor="end">bigint</text>
+</g>
+<g id="t-folder">
+<rect class="box" x="360" y="560" width="250" height="118" rx="6"/>
+<path class="hdr-store" d="M360.6,590 V566 Q360.6,560.6 366,560.6 H604 Q609.4,560.6 609.4,566 V590 Z"/>
+<text class="tname" x="372" y="580">folder</text>
+<text class="pk" x="370" y="608">PK</text>
+<text class="col" x="402" y="608">id</text>
+<text class="typ" x="600" y="608" text-anchor="end">bigint</text>
+<rect class="zebra" x="361" y="614" width="248" height="20"/>
+<text class="col" x="402" y="628">name</text>
+<text class="typ" x="600" y="628" text-anchor="end">varchar</text>
+<text class="fk" x="370" y="648">FK</text>
+<text class="col" x="402" y="648">parent_id</text>
+<text class="typ" x="600" y="648" text-anchor="end">bigint</text>
+<rect class="zebra" x="361" y="654" width="248" height="20"/>
+<text class="fk" x="370" y="668">FK</text>
+<text class="col" x="402" y="668">space_id</text>
+<text class="typ" x="600" y="668" text-anchor="end">bigint</text>
+</g>
+<g id="t-handover">
+<rect class="box" x="680" y="100" width="250" height="198" rx="6"/>
+<path class="hdr-flow" d="M680.6,130 V106 Q680.6,100.6 686,100.6 H924 Q929.4,100.6 929.4,106 V130 Z"/>
+<text class="tname" x="692" y="120">handover</text>
+<text class="pk" x="690" y="148">PK</text>
+<text class="col" x="722" y="148">id</text>
+<text class="typ" x="920" y="148" text-anchor="end">bigint</text>
+<rect class="zebra" x="681" y="154" width="248" height="20"/>
+<text class="col" x="722" y="168">title</text>
+<text class="typ" x="920" y="168" text-anchor="end">varchar</text>
+<text class="col" x="722" y="188">role</text>
+<text class="typ" x="920" y="188" text-anchor="end">varchar</text>
+<rect class="zebra" x="681" y="194" width="248" height="20"/>
+<text class="col" x="722" y="208">text</text>
+<text class="typ" x="920" y="208" text-anchor="end">text (JSON)</text>
+<text class="fk" x="690" y="228">FK</text>
+<text class="col" x="722" y="228">user_space_id</text>
+<text class="typ" x="920" y="228" text-anchor="end">bigint</text>
+<rect class="zebra" x="681" y="234" width="248" height="20"/>
+<text class="fk" x="690" y="248">FK?</text>
+<text class="col" x="722" y="248">folder_id</text>
+<text class="typ" x="920" y="248" text-anchor="end">bigint</text>
+<text class="col" x="722" y="268">pdf_generated_at</text>
+<text class="typ" x="920" y="268" text-anchor="end">datetime</text>
+<rect class="zebra" x="681" y="274" width="248" height="20"/>
+<text class="col" x="722" y="288">pdf_generated_by</text>
+<text class="typ" x="920" y="288" text-anchor="end">bigint</text>
+</g>
+<g id="t-tb_file">
+<rect class="box" x="680" y="340" width="250" height="198" rx="6"/>
+<path class="hdr-store" d="M680.6,370 V346 Q680.6,340.6 686,340.6 H924 Q929.4,340.6 929.4,346 V370 Z"/>
+<text class="tname" x="692" y="360">tb_file</text>
+<text class="pk" x="690" y="388">PK</text>
+<text class="col" x="722" y="388">id</text>
+<text class="typ" x="920" y="388" text-anchor="end">bigint</text>
+<rect class="zebra" x="681" y="394" width="248" height="20"/>
+<text class="col" x="722" y="408">original_file_name</text>
+<text class="typ" x="920" y="408" text-anchor="end">varchar</text>
+<text class="pk" x="690" y="428">UK</text>
+<text class="col" x="722" y="428">store_file_name</text>
+<text class="typ" x="920" y="428" text-anchor="end">varchar</text>
+<rect class="zebra" x="681" y="434" width="248" height="20"/>
+<text class="col" x="722" y="448">file_url</text>
+<text class="typ" x="920" y="448" text-anchor="end">varchar</text>
+<text class="col" x="722" y="468">size</text>
+<text class="typ" x="920" y="468" text-anchor="end">bigint</text>
+<rect class="zebra" x="681" y="474" width="248" height="20"/>
+<text class="fk" x="690" y="488">FK</text>
+<text class="col" x="722" y="488">user_space_id</text>
+<text class="typ" x="920" y="488" text-anchor="end">bigint</text>
+<text class="fk" x="690" y="508">FK?</text>
+<text class="col" x="722" y="508">folder_id</text>
+<text class="typ" x="920" y="508" text-anchor="end">bigint</text>
+<rect class="zebra" x="681" y="514" width="248" height="20"/>
+<text class="col" x="722" y="528">reference_count</text>
+<text class="typ" x="920" y="528" text-anchor="end">bigint</text>
+</g>
+<g id="t-chatbot">
+<rect class="box" x="680" y="590" width="250" height="138" rx="6"/>
+<path class="hdr-store" d="M680.6,620 V596 Q680.6,590.6 686,590.6 H924 Q929.4,590.6 929.4,596 V620 Z"/>
+<text class="tname" x="692" y="610">chatbot</text>
+<text class="pk" x="690" y="638">PK</text>
+<text class="col" x="722" y="638">id</text>
+<text class="typ" x="920" y="638" text-anchor="end">bigint</text>
+<rect class="zebra" x="681" y="644" width="248" height="20"/>
+<text class="col" x="722" y="658">question</text>
+<text class="typ" x="920" y="658" text-anchor="end">text</text>
+<text class="col" x="722" y="678">answer</text>
+<text class="typ" x="920" y="678" text-anchor="end">text</text>
+<rect class="zebra" x="681" y="684" width="248" height="20"/>
+<text class="fk" x="690" y="698">FK</text>
+<text class="col" x="722" y="698">user_space_id</text>
+<text class="typ" x="920" y="698" text-anchor="end">bigint</text>
+<text class="col" x="722" y="718">sources_json</text>
+<text class="typ" x="920" y="718" text-anchor="end">text</text>
+</g>
+<g id="t-refresh_token">
+<rect class="box" x="1000" y="100" width="250" height="98" rx="6"/>
+<path class="hdr-auth" d="M1000.6,130 V106 Q1000.6,100.6 1006,100.6 H1244 Q1249.4,100.6 1249.4,106 V130 Z"/>
+<text class="tname" x="1012" y="120">refresh_token</text>
+<text class="pk" x="1010" y="148">PK</text>
+<text class="col" x="1042" y="148">id</text>
+<text class="typ" x="1240" y="148" text-anchor="end">bigint</text>
+<rect class="zebra" x="1001" y="154" width="248" height="20"/>
+<text class="fk" x="1010" y="168">FK</text>
+<text class="col" x="1042" y="168">user_id</text>
+<text class="typ" x="1240" y="168" text-anchor="end">bigint</text>
+<text class="col" x="1042" y="188">content</text>
+<text class="typ" x="1240" y="188" text-anchor="end">varchar</text>
+</g>
+<g id="t-permissionuser">
+<rect class="box" x="1000" y="260" width="250" height="98" rx="6"/>
+<path class="hdr-auth" d="M1000.6,290 V266 Q1000.6,260.6 1006,260.6 H1244 Q1249.4,260.6 1249.4,266 V290 Z"/>
+<text class="tname" x="1012" y="280">permissionuser</text>
+<text class="pk" x="1010" y="308">PK</text>
+<text class="col" x="1042" y="308">id</text>
+<text class="typ" x="1240" y="308" text-anchor="end">bigint</text>
+<rect class="zebra" x="1001" y="314" width="248" height="20"/>
+<text class="fk" x="1010" y="328">FK</text>
+<text class="col" x="1042" y="328">permission_id</text>
+<text class="typ" x="1240" y="328" text-anchor="end">bigint</text>
+<text class="fk" x="1010" y="348">FK</text>
+<text class="col" x="1042" y="348">user_id</text>
+<text class="typ" x="1240" y="348" text-anchor="end">bigint</text>
+</g>
+<g id="t-permission">
+<rect class="box" x="1000" y="420" width="250" height="98" rx="6"/>
+<path class="hdr-auth" d="M1000.6,450 V426 Q1000.6,420.6 1006,420.6 H1244 Q1249.4,420.6 1249.4,426 V450 Z"/>
+<text class="tname" x="1012" y="440">permission</text>
+<text class="pk" x="1010" y="468">PK</text>
+<text class="col" x="1042" y="468">id</text>
+<text class="typ" x="1240" y="468" text-anchor="end">bigint</text>
+<rect class="zebra" x="1001" y="474" width="248" height="20"/>
+<text class="col" x="1042" y="488">title</text>
+<text class="typ" x="1240" y="488" text-anchor="end">varchar</text>
+<text class="col" x="1042" y="508">content</text>
+<text class="typ" x="1240" y="508" text-anchor="end">varchar</text>
+</g>
+<g id="t-permissiondetail">
+<rect class="box" x="1000" y="580" width="250" height="118" rx="6"/>
+<path class="hdr-auth" d="M1000.6,610 V586 Q1000.6,580.6 1006,580.6 H1244 Q1249.4,580.6 1249.4,586 V610 Z"/>
+<text class="tname" x="1012" y="600">permissiondetail</text>
+<text class="pk" x="1010" y="628">PK</text>
+<text class="col" x="1042" y="628">id</text>
+<text class="typ" x="1240" y="628" text-anchor="end">bigint</text>
+<rect class="zebra" x="1001" y="634" width="248" height="20"/>
+<text class="fk" x="1010" y="648">FK</text>
+<text class="col" x="1042" y="648">permission_id</text>
+<text class="typ" x="1240" y="648" text-anchor="end">bigint</text>
+<text class="col" x="1042" y="668">target</text>
+<text class="typ" x="1240" y="668" text-anchor="end">varchar</text>
+<rect class="zebra" x="1001" y="674" width="248" height="20"/>
+<text class="col" x="1042" y="688">func</text>
+<text class="typ" x="1240" y="688" text-anchor="end">int</text>
+</g>
+<text class="lbl" x="172" y="214" text-anchor="start">group_id</text>
+<text class="lbl" x="172" y="384" text-anchor="start">space_id</text>
+<text class="lbl" x="172" y="534" text-anchor="start">approval_id</text>
+<text class="lbl" x="492" y="324" text-anchor="start">user_id</text>
+<text class="lbl" x="490" y="728" text-anchor="middle">parent_id (self)</text>
+<text class="lbl" x="1132" y="374" text-anchor="start">permission_id</text>
+<text class="lbl" x="1132" y="564" text-anchor="start">permission_id</text>
+<line x1="40" y1="760" x2="1250" y2="760" stroke="var(--border)"/>
+<path class="rel" d="M40,782 H110" marker-start="url(#one)" marker-end="url(#many)"/>
+<text class="sub" x="120" y="786">1 : N (N 쪽 끝은 FK 컬럼 행에 연결)</text>
+<rect class="hdr-org" x="380" y="773" width="16" height="14" rx="3" stroke="var(--border)"/>
+<text class="sub" x="402" y="785">조직 (그룹·스페이스·멤버십)</text>
+<rect class="hdr-auth" x="570" y="773" width="16" height="14" rx="3" stroke="var(--border)"/>
+<text class="sub" x="592" y="785">인증·권한</text>
+<rect class="hdr-flow" x="760" y="773" width="16" height="14" rx="3" stroke="var(--border)"/>
+<text class="sub" x="782" y="785">인계 프로세스</text>
+<rect class="hdr-store" x="950" y="773" width="16" height="14" rx="3" stroke="var(--border)"/>
+<text class="sub" x="972" y="785">자료·챗봇</text>
+<text class="sub" x="40" y="814"><tspan class="pk">PK</tspan> 기본키 · <tspan class="pk">UK</tspan> 유니크 · <tspan class="fk">FK</tspan> 논리적 외래키 · <tspan class="fk">FK?</tspan> nullable (null = 루트 폴더) · 모든 테이블 공통 컬럼: deleted bit, created_at datetime(6), modified_at datetime(6)</text>
+<text class="sub" x="40" y="834">permissiondetail UNIQUE(permission_id, target, func) · permissionuser UNIQUE(permission_id, user_id) · handover.text = 모듈 JSON · tb_file.reference_count = 인수인계서 참조 횟수</text>
+</svg>
