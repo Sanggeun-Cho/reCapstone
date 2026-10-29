@@ -79,6 +79,10 @@
 | GRP-01 | I | alice 로그인 | 그룹 생성 `{groupName, spaces:[{workName:"S1"}, {workName:"S2"}]}` | 그룹 1, 스페이스 2. owner=alice, created_by=alice, alice는 G 멤버. 두 스페이스 모두 담당자 미배정 (⚠️ as-is: 각 스페이스에 alice=관리자, 담당자는 이메일로 지정되거나 요청자) |
 | GRP-02 | A | – | spaces가 빈 배열이거나 없음 | 400 "최소 하나의 스페이스를 포함해야..." |
 | GRP-03 | I | mallory는 G 멤버가 아님 | alice가 S의 첫 담당자로 mallory 지정 | 400 "그룹 멤버만 담당자로 지정할 수 있습니다." (⚠️ as-is: 없는 이메일이면 요청자가 담당자가 됨) |
+| GRP-04 | I | 스페이스 2개 중 2번째 생성 실패 | 그룹 생성 | 전체 롤백 (⚠️ as-is: 그룹과 1번째 스페이스가 남음) |
+| GRP-05 | I | G에 스페이스 2개 | 그룹 삭제 | 그룹·스페이스·멤버십 모두 soft delete |
+| GRP-06 | I | G의 스페이스 하나가 인계 진행 중 | 그룹 삭제 | 409, 전체 롤백 |
+| GRP-07 | A | alice | 내가 OWNER인 그룹 목록 (cursor, perPage, orderWay) | OWNER인 그룹만, 커서 기준 정렬·개수 정확 |
 | GRP-08 | I | alice가 OWNER | dave에게 OWNER 양도 | owner=dave, created_by=alice 그대로. 이후 alice의 그룹 관리 요청은 403 |
 | GRP-09 | I | – | G 멤버가 아닌 mallory에게 OWNER 양도 | 400 |
 | GRP-10 | I | – | OWNER alice가 양도 전에 그룹 탈퇴, 또는 멤버 목록에서 자신을 제거 | 409 |
@@ -87,10 +91,6 @@
 | GRP-13 | I | dave가 G 멤버 | alice가 dave 제거 → 다시 추가 → dave 스스로 탈퇴 | `group_member`에는 현재 상태만 남음. `group_member_history`에는 JOINED → REMOVED → JOINED → LEFT 네 건이 실행자·시각과 함께 쌓임 |
 | GRP-14 | I | 이력 존재 | `group_member_history` 행을 UPDATE 또는 DELETE (DB 직접) | DB 트리거가 거부 |
 | GRP-15 | I | 제거된 멤버 | 그 사용자를 S의 담당자로 지정 (DB 직접 삽입 포함) | 애플리케이션 400, DB에서도 FK 위반 |
-| GRP-04 | I | 스페이스 2개 중 2번째 생성 실패 | 그룹 생성 | 전체 롤백 (⚠️ as-is: 그룹과 1번째 스페이스가 남음) |
-| GRP-05 | I | G에 스페이스 2개 | 그룹 삭제 | 그룹·스페이스·멤버십 모두 soft delete |
-| GRP-06 | I | G의 스페이스 하나가 인계 진행 중 | 그룹 삭제 | 409, 전체 롤백 |
-| GRP-07 | A | alice | 내가 OWNER인 그룹 목록 (cursor, perPage, orderWay) | OWNER인 그룹만, 커서 기준 정렬·개수 정확 |
 | SPC-01 | U | – | 스페이스 생성 | `spaceCode`는 서버가 UUID로 발급 (요청값 무시) `🔁 1.9` |
 | SPC-02 | I | 진행 중 인계 있음 | 스페이스 수정·삭제 | 409 "현재 인수인계가 진행 중이므로..." (⚠️ as-is 400) |
 | SPC-03 | I | – | 스페이스 삭제 | 스페이스와 하위 데이터 처리 `🔁 D-11` (별도의 스페이스 멤버십은 없음) |
