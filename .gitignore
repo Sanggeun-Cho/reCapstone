@@ -53,3 +53,6 @@ application-secret.yaml
 ### OS ###
 .DS_Store
 Thumbs.db
+
+### Local ###
+REVIEW_PROMPT.md
