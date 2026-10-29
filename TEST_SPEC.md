@@ -19,7 +19,7 @@
 | `G` / `S` | `alice`가 그룹 G와 스페이스 S를 생성한다. bob, carol, dave를 G 멤버로 추가하고, S의 첫 담당자로 bob을 지정한다 |
 | 레벨 | **U** 도메인·서비스 단위 테스트 / **I** 통합 테스트(DB 포함) / **A** API 테스트(MockMvc, 인가·직렬화) |
 
-공통 응답 규약: 성공 2xx, 실패 시 `{"message": "..."}` (재설계 후에는 ProblemDetail + 오류 코드 `🔁 D-12`).
+공통 응답 규약: 성공 2xx (생성은 201). 실패 시 RFC 9457 `ProblemDetail` + 도메인 오류 코드(`code`). 아래 케이스의 오류 메시지는 `detail`에 들어간다. 원본의 실패 응답은 `{"message": "..."}`였다.
 
 ---
 
@@ -84,6 +84,9 @@
 | GRP-10 | I | – | OWNER alice가 양도 전에 그룹 탈퇴, 또는 멤버 목록에서 자신을 제거 | 409 |
 | GRP-11 | I | bob이 S 담당자 | alice가 G에서 bob 제거 | 409 (먼저 인계하거나 긴급 재지정해야 함. DB 복합 FK로도 거부됨). SPC-12 이후에는 제거 성공 |
 | GRP-12 | I | DB 직접 삽입 | 그룹 멤버가 아닌 사용자를 `space.assignee_id`나 `group.owner_id`에 넣음 | FK 제약 위반 |
+| GRP-13 | I | dave가 G 멤버 | alice가 dave 제거 → 다시 추가 → dave 스스로 탈퇴 | `group_member`에는 현재 상태만 남음. `group_member_history`에는 JOINED → REMOVED → JOINED → LEFT 네 건이 실행자·시각과 함께 쌓임 |
+| GRP-14 | I | 이력 존재 | `group_member_history` 행을 UPDATE 또는 DELETE (DB 직접) | DB 트리거가 거부 |
+| GRP-15 | I | 제거된 멤버 | 그 사용자를 S의 담당자로 지정 (DB 직접 삽입 포함) | 애플리케이션 400, DB에서도 FK 위반 |
 | GRP-04 | I | 스페이스 2개 중 2번째 생성 실패 | 그룹 생성 | 전체 롤백 (⚠️ as-is: 그룹과 1번째 스페이스가 남음) |
 | GRP-05 | I | G에 스페이스 2개 | 그룹 삭제 | 그룹·스페이스·멤버십 모두 soft delete |
 | GRP-06 | I | G의 스페이스 하나가 인계 진행 중 | 그룹 삭제 | 409, 전체 롤백 |
@@ -105,6 +108,7 @@
 | SPC-15 | I | – | alice가 대상 없이(null) 긴급 재지정 → 이후 carol 지정 | 첫 단계에서 S 담당자 미배정, `FORCED(to=null)` 기록. 다음 지정은 `REFILL`로 기록 (`INITIAL` 아님) |
 | SPC-16 | A | S | 담당자 변경 이력 조회 (alice) | INITIAL → HANDOVER → FORCED → REFILL 순서로 유형·이전·새 담당자·실행자·사유·시각 반환 |
 | SPC-17 | I | 담당자가 있었던 적이 없는 스페이스 | 첫 지정 | `INITIAL`로 기록 |
+| SPC-18 | I | 변경 이력 존재 | `assignment_change` 행을 UPDATE 또는 DELETE (DB 직접) | DB 트리거가 거부 |
 
 ## 4. 인계 프로세스 (HO)
 
