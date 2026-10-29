@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 
 @ExtendWith(OutputCaptureExtension.class)
 class RequestLoggingApiTest extends ApiTest {
@@ -39,16 +38,28 @@ class RequestLoggingApiTest extends ApiTest {
                 .andExpect(header().string(RequestIdFilter.HEADER, org.hamcrest.Matchers.matchesPattern("[0-9a-f-]{36}")));
     }
 
+    // 요청 본문은 어디에서도 로그로 남기지 않으므로 검증 대상이 아니다.
+    // 본문 형식의 값이 로그 메시지에 섞인 경우는 마스킹 변환어로 검증한다.
     @Test
-    @DisplayName("NFR-07: 비밀번호와 토큰은 로그에 남지 않는다")
-    void secretsNotLogged(CapturedOutput output) throws Exception {
+    @DisplayName("NFR-07: 접근 로그에 쿼리 문자열의 토큰과 Authorization 헤더가 남지 않는다")
+    void requestSecretsNotLogged(CapturedOutput output) throws Exception {
         mockMvc.perform(post("/api/v1/test-probe/validation?access_token=query-secret")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer header-secret")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"alice\",\"password\":\"body-secret\"}"))
+                        .header(RequestIdFilter.HEADER, "req-secrets")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer header-secret"))
                 .andExpect(status().isUnauthorized());
-        log.info("payload {\"name\":\"alice\",\"password\":\"logged-secret\"}");
 
-        assertThat(output).doesNotContain("query-secret", "header-secret", "body-secret", "logged-secret");
+        assertThat(output)
+                .contains("[req-secrets]", "POST /api/v1/test-probe/validation -> 401")
+                .doesNotContain("query-secret", "header-secret");
+    }
+
+    @Test
+    @DisplayName("NFR-07: 로그 메시지에 섞인 비밀번호는 콘솔 출력에서 가려진다")
+    void passwordInLogMessageMasked(CapturedOutput output) {
+        log.info("payload {\"name\":\"alice\",\"password\":\"logged secret, with}punctuation\"}");
+
+        assertThat(output)
+                .contains("payload {\"name\":\"alice\",\"password\":\"****\"}")
+                .doesNotContain("logged secret", "punctuation");
     }
 }
