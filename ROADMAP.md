@@ -30,7 +30,7 @@
 |---|---|---|---|---|
 | **S0 기반** | 프로젝트 설정, DB·Flyway, 테스트 인프라(Testcontainers), 오류 응답 형식, 보안 골격(기본 거부), `AccessPolicy` 골격, 공통 엔티티(감사 필드) | ✅ D-10 JPA+MyBatis 조회 전용, ✅ D-11, ✅ D-12, ✅ D-13 PostgreSQL+PGVector, ✅ 코드 규약, ✅ RT 저장소 Redis(→ S1에서 세션 저장소로 대체) | ✅ 완료 ([#1](https://github.com/Sanggeun-Cho/reCapstone/issues/1)), CI ([#3](https://github.com/Sanggeun-Cho/reCapstone/issues/3)) | NFR-05·06·07 |
 | **S1 회원·인증** | 가입·이메일 인증, 로그인·잠금, 2단계 인증(TOTP)·복구 코드, 세션·기기 관리, 비밀번호 변경·재설정, 본인 재확인, 내 정보, 탈퇴 | ✅ D-9(서버 세션), ✅ 1.9 회원 | ✅ 완료 ([#5](https://github.com/Sanggeun-Cho/reCapstone/issues/5)) | AUTH-*, USER-* |
-| **S2 그룹·스페이스·권한** | 그룹, 초대, 멤버, OWNER 양도, 스페이스, 담당자 지정·긴급 재지정, 변경 이력, 권한 판정, 그룹 삭제, 스페이스 삭제(양쪽 동의), 30일 후 영구 삭제 작업 | ✅ D-1·D-2, ✅ 그룹 가입(초대 수락), ✅ 그룹·스페이스 삭제와 보관, ✅ D-8 일부(운영자는 S8) | 정책 확정 ([#8](https://github.com/Sanggeun-Cho/reCapstone/issues/8)) | GRP-*, INV-*, SPC-01~03·08~20, SDEL-*, PURGE-*, AUTHZ 매트릭스, USER-05(일부)·08·11 |
+| **S2 그룹·스페이스·권한** | 그룹, 초대, 멤버, OWNER 양도, 스페이스, 담당자 지정·긴급 재지정, 변경 이력, 권한 판정, 그룹 삭제, 스페이스 삭제(양쪽 동의), 30일 후 영구 삭제 작업 | ✅ D-1·D-2, ✅ 그룹 가입(초대 수락), ✅ 그룹·스페이스 삭제와 보관, ✅ D-8 일부(운영자는 S8) | 구현 완료, 확인 대기 ([#8](https://github.com/Sanggeun-Cho/reCapstone/issues/8)) | GRP-*, INV-*, SPC-01~03·08~20, SDEL-*, PURGE-*, AUTHZ 매트릭스, USER-05(일부)·08·11 |
 | **S3 파일·폴더** | 업로드·다운로드, 폴더 트리, 이름 변경·이동·삭제, 미리보기 | D-6 저장소·전달 방식, 폴더 규칙, 이름 중복, 용량 | 논의 대기 | FILE-*, NFR-01·02 |
 | **S4 인수인계서** | 문서 작성·수정, 모듈 스키마, 파일 첨부 | D-5 문서 단위·모듈·버전, D-4 첨부 규칙, "인계 후 연락처" 모듈 여부 | 질문 제시됨(보류) | DOC-* |
 | **S5 인계 절차** | 시작, 잠금, 서명, 거부, 완료, 스냅샷, PDF | ✅ D-3 일부(확정), ✅ 서명 시 본인 재확인(S1), 스냅샷·PDF, 인수자 수락 | 일부 확정 | HO-* |
@@ -46,4 +46,4 @@
 
 ## 4. 현재 위치
 - 논의: **S3 파일·폴더** (다음)
-- 구현: **S2 그룹·스페이스·권한** ([#8](https://github.com/Sanggeun-Cho/reCapstone/issues/8), 시작 전 확인 대기)
+- 구현: **S2 그룹·스페이스·권한** ([#8](https://github.com/Sanggeun-Cho/reCapstone/issues/8), 구현 완료, 확인 대기)
