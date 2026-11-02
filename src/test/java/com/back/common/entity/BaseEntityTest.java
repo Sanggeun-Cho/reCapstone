@@ -2,6 +2,7 @@ package com.back.common.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.back.common.security.AuthUser;
 import com.back.support.IntegrationTest;
 import com.back.support.SampleEntity;
 import com.back.support.SampleRepository;
@@ -83,6 +84,6 @@ class BaseEntityTest extends IntegrationTest {
 
     private void authenticateAs(long userId) {
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(userId, null, List.of()));
+                new UsernamePasswordAuthenticationToken(new AuthUser(userId), null, List.of()));
     }
 }
