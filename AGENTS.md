@@ -57,7 +57,8 @@ AI 에이전트가 이 저장소에서 작업할 때 따르는 안내다. 대화
 ### 코드 규약
 - 기술 스택
   - DB: PostgreSQL + PGVector, Flyway
-  - RT 저장소: Redis (TTL)
+  - 인증: 서버 세션 (Spring Session + Redis). JWT는 쓰지 않는다
+  - 메일: 로컬 Mailpit(compose), 테스트 GreenMail
   - 데이터 접근: JPA(쓰기와 단건 조회) + MyBatis(목록·화면 조회 전용)
 - 패키지는 기능별로 나눈다: `auth`, `user`, `group`, `space`, `file`, `handover`, `chat`, `common`
 - 서비스는 구현체가 하나여도 인터페이스와 구현 클래스로 나눈다.
