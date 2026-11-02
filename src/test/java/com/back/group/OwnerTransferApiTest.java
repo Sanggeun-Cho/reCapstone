@@ -33,7 +33,7 @@ class OwnerTransferApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("GRP-08b: 본인 재확인 값이 없거나 틀리면 400 REAUTH_FAILED, OWNER는 그대로다. 틀린 값은 로그인 실패로 센다")
+    @DisplayName("GRP-08b: 본인 재확인 값이 없거나 틀리면 400 REAUTH_FAILED, OWNER는 그대로다. 틀린 값만 로그인 실패로 센다")
     void reauthRequired() throws Exception {
         post(transferUrl(), ALICE, body("\"userId\":" + dave))
                 .andExpect(status().isBadRequest())
@@ -43,8 +43,8 @@ class OwnerTransferApiTest extends GroupTestSupport {
                 .andExpect(jsonPath("$.code").value("REAUTH_FAILED"));
 
         assertThat(ownerId()).isEqualTo(alice);
-        // 실패 2회가 쌓였으므로 3회 더 틀리면 잠긴다 (계정당 5회, 정책 7.2)
-        for (int i = 0; i < 2; i++) {
+        // 틀린 값 1회만 실패로 센다(값이 없는 요청은 세지 않는다). 4회 더 틀리면 잠긴다 (계정당 5회, 정책 7.2)
+        for (int i = 0; i < 3; i++) {
             post(transferUrl(), ALICE, body("\"userId\":" + dave + ",\"reauth\":{\"password\":\"wrong\"}"))
                     .andExpect(status().isBadRequest());
         }
