@@ -17,6 +17,18 @@ spring:
       password: ${REDIS_PASSWORD:}
       repositories:
         enabled: false
+  session:
+    # 미사용 만료 (정책 7.4 제2항). 절대 수명은 app.auth.session-absolute-timeout
+    timeout: ${SESSION_IDLE_TIMEOUT:P14D}
+    data:
+      redis:
+        # 사용자별 세션 조회(기기 관리)에 색인이 필요하다
+        repository-type: indexed
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
   jpa:
     open-in-view: false
     hibernate:
@@ -39,6 +51,11 @@ springdoc:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  auth:
+    frontend-url: ${APP_FRONTEND_URL:http://localhost:3000}
+    mail-from: ${MAIL_FROM:no-reply@recapstone.local}
+    totp-encryption-key: ${TOTP_ENCRYPTION_KEY:}
+    session-absolute-timeout: ${SESSION_ABSOLUTE_TIMEOUT:P30D}
 
 ---
 spring:

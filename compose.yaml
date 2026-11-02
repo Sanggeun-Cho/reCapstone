@@ -14,3 +14,9 @@ services:
     image: redis:7.4-alpine
     ports:
       - "127.0.0.1:6379:6379"
+  # 개발용 메일 수신함. 보낸 메일은 http://localhost:8025 에서 본다
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"

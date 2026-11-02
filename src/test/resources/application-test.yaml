@@ -5,3 +5,7 @@ spring:
 app:
   cors:
     allowed-origins: http://localhost:3000
+  auth:
+    frontend-url: http://localhost:3000
+    # 테스트 전용 고정 키 (비밀값 아님)
+    totp-encryption-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
