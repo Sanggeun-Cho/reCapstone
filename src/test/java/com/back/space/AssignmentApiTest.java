@@ -43,9 +43,12 @@ class AssignmentApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("SPC-11: OWNER가 아니면 지정할 수 없고(403), 인계 중이면 409")
+    @DisplayName("SPC-11: 스페이스를 볼 수 없으면 404, 볼 수 있지만 OWNER가 아니면 403, 인계 중이면 409")
     void assignForbiddenOrLocked() throws Exception {
-        put("/api/v1/spaces/" + s2 + "/assignee", BOB, body("\"userId\":" + carol)).andExpect(status().isForbidden());
+        put("/api/v1/spaces/" + s2 + "/assignee", BOB, body("\"userId\":" + carol)).andExpect(status().isNotFound());
+        handoverStatus.start(s2, g, alice, carol);
+        put("/api/v1/spaces/" + s2 + "/assignee", CAROL, body("\"userId\":" + dave)).andExpect(status().isForbidden());
+        handoverStatus.reset();
 
         handoverStatus.start(s2, g, alice, carol);
         put("/api/v1/spaces/" + s2 + "/assignee", ALICE, body("\"userId\":" + carol))
