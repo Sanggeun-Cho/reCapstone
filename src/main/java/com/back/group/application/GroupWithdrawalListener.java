@@ -16,7 +16,8 @@ import org.springframework.stereotype.Component;
  * <p>
  * 삭제되어 보관 중인 그룹에서도 빠지고 그 그룹 스페이스의 담당이 비워진다. 그래야 운영자가 그룹을 복구해도
  * 탈퇴자가 멤버나 담당자로 다시 나오지 않는다 (정책 2.6 제4항).
- * 단, 보관 중인 그룹의 OWNER인 경우는 처리 방법이 정해지지 않아 그 그룹의 멤버 행을 그대로 둔다 (OWNER 복합 FK).
+ * 단, 보관 중인 그룹의 OWNER인 경우는 OWNER 복합 FK 때문에 그 그룹의 멤버 행을 그대로 둔다.
+ * 그 그룹은 복구하지 않으므로(정책 2.6 제5항) 남은 행은 영구 삭제 때 함께 지워진다.
  */
 @Component
 @RequiredArgsConstructor

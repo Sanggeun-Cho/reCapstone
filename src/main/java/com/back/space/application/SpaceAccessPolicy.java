@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
  *   <li>인수자: 진행 중인 인계의 인수자 ({@link HandoverStatus}, S5)</li>
  * </ul>
  * 삭제되어 보관 중인 스페이스나, 삭제된 그룹의 스페이스는 누구에게나 404다 (정책 4.3 제4항).
+ * 스페이스를 볼 수 없는 사람(같은 그룹의 관계없는 멤버, 그룹 밖 사용자, 이전 담당자)에게도 404로 답한다.
+ * 403을 주면 그 스페이스가 있다는 사실이 드러나기 때문이다 (정책 4.3 제3항). 볼 수는 있지만 권한이 없는 행위는 403이다.
  */
 @Component
 @RequiredArgsConstructor
@@ -91,7 +93,7 @@ public class SpaceAccessPolicy implements AccessPolicy<SpaceAccessPolicy.Target,
 
     private Target check(long userId, Space space, Group group, Action action) {
         Target target = new Target(space, group, handoverStatus.isReceiver(space.getId(), userId));
-        check(userId, target, action);
+        checkVisible(userId, target, Action.READ, action);
         return target;
     }
 }

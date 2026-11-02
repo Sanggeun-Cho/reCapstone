@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 /**
  * 그룹 권한. 멤버는 그룹 정보와 멤버 목록을 보고(정책 2.3 제3항), 관리는 OWNER가 한다 (정책 2.1, 2.3).
  * 삭제되어 보관 중인 그룹은 누구에게나 404다 (정책 4.3 제4항).
+ * 그룹 밖 사용자에게도 404로 답해 그룹이 있다는 사실을 드러내지 않는다. 멤버가 관리 행위를 하려 하면 403이다.
  */
 @Component
 @RequiredArgsConstructor
@@ -39,7 +40,7 @@ public class GroupAccessPolicy implements AccessPolicy<Group, GroupAccessPolicy.
     public Group checkAndGet(long userId, long groupId, Action action) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
-        check(userId, group, action);
+        checkVisible(userId, group, Action.VIEW, action);
         return group;
     }
 
@@ -47,7 +48,7 @@ public class GroupAccessPolicy implements AccessPolicy<Group, GroupAccessPolicy.
     public Group checkAndLock(long userId, long groupId, Action action) {
         Group group = groupRepository.findForUpdate(groupId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
-        check(userId, group, action);
+        checkVisible(userId, group, Action.VIEW, action);
         return group;
     }
 }

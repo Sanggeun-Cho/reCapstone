@@ -19,7 +19,7 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, GroupM
 
     /**
      * 삭제되어 보관 중인 그룹 중 그 사용자가 OWNER가 아닌 멤버인 그룹 id. 그룹 행을 잠근다.
-     * 보관 중인 그룹의 OWNER가 탈퇴한 경우의 처리는 아직 정하지 않아 제외한다.
+     * 보관 중인 그룹의 OWNER는 제외한다. OWNER 복합 FK 때문에 멤버 행을 지울 수 없고, 그 그룹은 복구하지 않는다 (정책 2.6 제5항).
      */
     @Query(value = """
             SELECT g.id FROM groups g
