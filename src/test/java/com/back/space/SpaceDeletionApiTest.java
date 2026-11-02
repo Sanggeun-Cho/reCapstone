@@ -96,13 +96,16 @@ class SpaceDeletionApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("SDEL-07: OWNER·담당자가 아니면 요청·승인·거절할 수 없다 (403)")
+    @DisplayName("SDEL-07: 스페이스를 볼 수 없는 사람에게는 404, 볼 수 있지만 OWNER·담당자가 아닌 인수자에게는 403")
     void forbidden() throws Exception {
-        request(s, DAVE).andExpect(status().isForbidden());
-        request(s, MALLORY).andExpect(status().isForbidden());
+        request(s, DAVE).andExpect(status().isNotFound());
+        request(s, MALLORY).andExpect(status().isNotFound());
         request(s, ALICE).andExpect(status().isOk());
+        approve(s, CAROL).andExpect(status().isNotFound());
+        post("/api/v1/spaces/" + s + "/deletion-request/reject", CAROL, body("")).andExpect(status().isNotFound());
+
+        handoverStatus.start(s, g, bob, carol);
         approve(s, CAROL).andExpect(status().isForbidden());
-        post("/api/v1/spaces/" + s + "/deletion-request/reject", CAROL, body("")).andExpect(status().isForbidden());
     }
 
     @Test
@@ -245,7 +248,7 @@ class SpaceDeletionApiTest extends GroupTestSupport {
                 .andExpect(jsonPath("$.requestedBy.name").value("앨리스"))
                 .andExpect(jsonPath("$.requestedAt").exists())
                 .andExpect(jsonPath("$.expiresAt").exists());
-        get("/api/v1/spaces/" + s + "/deletion-request", DAVE).andExpect(status().isForbidden());
+        get("/api/v1/spaces/" + s + "/deletion-request", DAVE).andExpect(status().isNotFound());
     }
 
     @Test

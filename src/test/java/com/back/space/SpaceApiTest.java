@@ -33,10 +33,10 @@ class SpaceApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("SPC-01b: 담당자나 그룹 밖 사용자는 스페이스를 만들 수 없다 (403)")
+    @DisplayName("SPC-01b: 담당자는 스페이스를 만들 수 없고(403), 그룹 밖 사용자에게는 그룹이 없는 것처럼 404")
     void createForbidden() throws Exception {
         post("/api/v1/groups/" + g + "/spaces", BOB, body("\"name\":\"S9\"")).andExpect(status().isForbidden());
-        post("/api/v1/groups/" + g + "/spaces", MALLORY, body("\"name\":\"S9\"")).andExpect(status().isForbidden());
+        post("/api/v1/groups/" + g + "/spaces", MALLORY, body("\"name\":\"S9\"")).andExpect(status().isNotFound());
     }
 
     @ParameterizedTest
@@ -106,10 +106,13 @@ class SpaceApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("SPC-09: 관계없는 멤버는 그룹의 스페이스 목록과 스페이스 상세를 볼 수 없다 (403)")
+    @DisplayName("SPC-09: 관계없는 멤버는 그룹의 스페이스 목록을 볼 수 없고(403), 스페이스는 없는 것처럼 404 (정책 4.3 제3항)")
     void unrelatedMember() throws Exception {
         get("/api/v1/groups/" + g + "/spaces", DAVE).andExpect(status().isForbidden());
-        get("/api/v1/spaces/" + s, DAVE).andExpect(status().isForbidden());
+        get("/api/v1/spaces/" + s, DAVE)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+        get("/api/v1/spaces/" + s, MALLORY).andExpect(status().isNotFound());
         get("/api/v1/groups/" + g + "/spaces", BOB).andExpect(status().isForbidden());
     }
 

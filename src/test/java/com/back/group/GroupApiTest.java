@@ -137,12 +137,12 @@ class GroupApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("GRP-16b: 그룹 밖 사용자는 그룹 상세와 멤버 목록을 볼 수 없다 (403)")
+    @DisplayName("GRP-16b: 그룹 밖 사용자에게는 그룹이 없는 것처럼 404로 답한다 (존재를 드러내지 않음)")
     void outsiderCannotViewGroup() throws Exception {
         get("/api/v1/groups/" + g, MALLORY)
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
-        get("/api/v1/groups/" + g + "/members", MALLORY).andExpect(status().isForbidden());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+        get("/api/v1/groups/" + g + "/members", MALLORY).andExpect(status().isNotFound());
     }
 
     @Test

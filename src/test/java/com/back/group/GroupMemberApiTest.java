@@ -111,9 +111,9 @@ class GroupMemberApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("GRP-13: 그룹 밖 사용자가 나가기를 호출하면 403")
+    @DisplayName("GRP-13: 그룹 밖 사용자가 나가기를 호출하면 404")
     void outsiderLeave() throws Exception {
-        delete("/api/v1/groups/" + g + "/members/me", MALLORY).andExpect(status().isForbidden());
+        delete("/api/v1/groups/" + g + "/members/me", MALLORY).andExpect(status().isNotFound());
     }
 
     @Test
@@ -141,7 +141,7 @@ class GroupMemberApiTest extends GroupTestSupport {
     @Test
     @DisplayName("USER-11: 그룹 밖 사용자는 멤버의 연락처를 볼 수 없다")
     void outsiderCannotSeeContacts() throws Exception {
-        get("/api/v1/groups/" + g + "/members", MALLORY).andExpect(status().isForbidden());
+        get("/api/v1/groups/" + g + "/members", MALLORY).andExpect(status().isNotFound());
         get("/api/v1/users/" + bob, MALLORY).andExpect(status().is4xxClientError());
     }
 

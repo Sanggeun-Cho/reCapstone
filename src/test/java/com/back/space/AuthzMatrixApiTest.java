@@ -18,6 +18,7 @@ import org.springframework.http.HttpMethod;
 /**
  * AUTHZ-01: {@code TEST_SPEC.md} 2장 인가 매트릭스 중 그룹·스페이스 행. 각 칸의 상태 코드를 그대로 확인한다.
  * carol 열은 인계 진행 중(인수자) 기준이고, 나머지 열은 평상시 기준이다. "–" 칸은 검사하지 않는다.
+ * 볼 수 없는 스페이스와 속하지 않은 그룹은 404(존재를 드러내지 않음), 볼 수 있지만 권한이 없는 행위는 403이다.
  */
 class AuthzMatrixApiTest extends GroupTestSupport {
 
@@ -30,37 +31,37 @@ class AuthzMatrixApiTest extends GroupTestSupport {
 
     private static final Row[] ROWS = {
             new Row("스페이스 상세 조회", HttpMethod.GET, "/api/v1/spaces/{s}", null,
-                    401, 403, 403, 200, 200, 200),
+                    401, 404, 404, 200, 200, 200),
             new Row("스페이스 생성", HttpMethod.POST, "/api/v1/groups/{g}/spaces", "{\"name\":\"N\"}",
-                    401, 403, 403, 403, 403, OK),
+                    401, 404, 403, 403, 403, OK),
             new Row("스페이스 이름 변경", HttpMethod.PATCH, "/api/v1/spaces/{s}", "{\"name\":\"N\"}",
-                    401, 403, 403, 403, 403, OK),
+                    401, 404, 404, 403, 403, OK),
             new Row("스페이스 삭제 요청", HttpMethod.POST, "/api/v1/spaces/{s}/deletion-request", "{" + REAUTH + "}",
-                    401, 403, 403, 403, OK, OK),
+                    401, 404, 404, 403, OK, OK),
             new Row("첫 담당자 지정", HttpMethod.PUT, "/api/v1/spaces/{s2}/assignee", "{\"userId\":{dave}}",
-                    401, 403, 403, SKIP, SKIP, OK),
+                    401, 404, 404, SKIP, SKIP, OK),
             new Row("긴급 담당자 재지정", HttpMethod.POST, "/api/v1/spaces/{s}/forced-reassignment",
                     "{\"userId\":{dave},\"reason\":\"사유\"}",
-                    401, 403, 403, 403, 403, OK),
+                    401, 404, 404, 403, 403, OK),
             new Row("그룹명 수정", HttpMethod.PATCH, "/api/v1/groups/{g}", "{\"name\":\"N\"}",
-                    401, 403, 403, 403, 403, OK),
+                    401, 404, 403, 403, 403, OK),
             new Row("그룹 삭제", HttpMethod.POST, "/api/v1/groups/{g}/deletion", "{\"confirmName\":\"G\"," + REAUTH + "}",
-                    401, 403, 403, 403, 403, OK),
+                    401, 404, 403, 403, 403, OK),
             new Row("OWNER 양도", HttpMethod.POST, "/api/v1/groups/{g}/owner-transfer",
                     "{\"userId\":{dave}," + REAUTH + "}",
-                    401, 403, 403, 403, 403, OK),
+                    401, 404, 403, 403, 403, OK),
             new Row("멤버 초대", HttpMethod.POST, "/api/v1/groups/{g}/invitations", "{\"email\":\"erin@example.com\"}",
-                    401, 403, 403, 403, 403, OK),
+                    401, 404, 403, 403, 403, OK),
             new Row("초대 취소", HttpMethod.DELETE, "/api/v1/groups/{g}/invitations/{inv}", null,
-                    401, 403, 403, 403, 403, OK),
+                    401, 404, 403, 403, 403, OK),
             new Row("멤버 제거", HttpMethod.DELETE, "/api/v1/groups/{g}/members/{dave}", null,
-                    401, 403, 403, 403, 403, OK),
+                    401, 404, 403, 403, 403, OK),
             new Row("멤버 이력 조회", HttpMethod.GET, "/api/v1/groups/{g}/member-history", null,
-                    401, 403, 403, 403, 403, OK),
+                    401, 404, 403, 403, 403, OK),
             new Row("그룹 상세 조회", HttpMethod.GET, "/api/v1/groups/{g}", null,
-                    401, 403, 200, 200, 200, 200),
+                    401, 404, 200, 200, 200, 200),
             new Row("멤버 목록 조회", HttpMethod.GET, "/api/v1/groups/{g}/members", null,
-                    401, 403, 200, 200, 200, 200),
+                    401, 404, 200, 200, 200, 200),
     };
 
     static Stream<Arguments> cells() {

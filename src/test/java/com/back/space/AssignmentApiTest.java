@@ -64,7 +64,7 @@ class AssignmentApiTest extends GroupTestSupport {
         assertThat(change.get("to_user_id")).isEqualTo(carol);
         assertThat(change.get("actor_id")).isEqualTo(alice);
         assertThat(change.get("reason")).isEqualTo("연락 두절");
-        get("/api/v1/spaces/" + s, BOB).andExpect(status().isForbidden());
+        get("/api/v1/spaces/" + s, BOB).andExpect(status().isNotFound());
         get("/api/v1/spaces/" + s, CAROL).andExpect(status().isOk());
     }
 
@@ -151,8 +151,8 @@ class AssignmentApiTest extends GroupTestSupport {
                 .andExpect(jsonPath("$[1].actor.name").value("앨리스"))
                 .andExpect(jsonPath("$[1].from.name").value("밥"));
         get("/api/v1/spaces/" + s + "/assignment-changes", CAROL).andExpect(status().isOk());
-        get("/api/v1/spaces/" + s + "/assignment-changes", BOB).andExpect(status().isForbidden());
-        get("/api/v1/spaces/" + s + "/assignment-changes", DAVE).andExpect(status().isForbidden());
+        get("/api/v1/spaces/" + s + "/assignment-changes", BOB).andExpect(status().isNotFound());
+        get("/api/v1/spaces/" + s + "/assignment-changes", DAVE).andExpect(status().isNotFound());
     }
 
     @Test
