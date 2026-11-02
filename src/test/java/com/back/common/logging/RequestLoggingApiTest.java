@@ -1,6 +1,7 @@
 package com.back.common.logging;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -43,7 +44,7 @@ class RequestLoggingApiTest extends ApiTest {
     @Test
     @DisplayName("NFR-07: 접근 로그에 쿼리 문자열의 토큰과 Authorization 헤더가 남지 않는다")
     void requestSecretsNotLogged(CapturedOutput output) throws Exception {
-        mockMvc.perform(post("/api/v1/test-probe/validation?access_token=query-secret")
+        mockMvc.perform(post("/api/v1/test-probe/validation?access_token=query-secret").with(csrf())
                         .header(RequestIdFilter.HEADER, "req-secrets")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer header-secret"))
                 .andExpect(status().isUnauthorized());

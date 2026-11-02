@@ -45,8 +45,12 @@ public abstract class BaseEntity {
     }
 
     protected void softDelete() {
+        softDelete(Instant.now());
+    }
+
+    protected void softDelete(Instant at) {
         if (deletedAt == null) {
-            deletedAt = Instant.now();
+            deletedAt = at;
         }
     }
 }

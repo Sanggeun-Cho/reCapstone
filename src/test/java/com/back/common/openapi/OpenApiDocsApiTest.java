@@ -35,4 +35,19 @@ class OpenApiDocsApiTest extends ApiTest {
                 .andExpect(jsonPath(responses + "['403']." + schemaRef).value("#/components/schemas/ProblemDetail"))
                 .andExpect(jsonPath(responses + "['500']." + schemaRef).value("#/components/schemas/ProblemDetail"));
     }
+
+    @Test
+    @DisplayName("S1: 회원·인증 엔드포인트가 노출되고, CSRF 토큰 인자는 요청 파라미터로 드러나지 않는다")
+    void authEndpointsExposed() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/auth/login'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/auth/login/mfa'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/auth/sessions'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/users/me'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/users/me/2fa/setup'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/auth/csrf'].get.parameters").doesNotExist())
+                .andExpect(jsonPath("$.components.schemas.ProblemDetail.properties.code.enum",
+                        hasItems("ACCOUNT_LOCKED", "EMAIL_NOT_VERIFIED", "REAUTH_FAILED", "CSRF_INVALID")));
+    }
 }

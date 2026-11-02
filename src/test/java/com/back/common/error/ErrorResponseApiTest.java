@@ -1,5 +1,6 @@
 package com.back.common.error;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -55,7 +56,7 @@ class ErrorResponseApiTest extends ApiTest {
     @Test
     @DisplayName("입력 검증 실패는 400과 필드별 오류")
     void validationError() throws Exception {
-        mockMvc.perform(post(PROBE + "/validation").with(user("alice"))
+        mockMvc.perform(post(PROBE + "/validation").with(user("alice")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"\"}"))
                 .andExpect(status().isBadRequest())
@@ -66,7 +67,7 @@ class ErrorResponseApiTest extends ApiTest {
     @Test
     @DisplayName("읽을 수 없는 요청 본문은 400 INVALID_INPUT")
     void malformedBody() throws Exception {
-        mockMvc.perform(post(PROBE + "/validation").with(user("alice"))
+        mockMvc.perform(post(PROBE + "/validation").with(user("alice")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{not json"))
                 .andExpect(status().isBadRequest())
@@ -84,7 +85,7 @@ class ErrorResponseApiTest extends ApiTest {
     @Test
     @DisplayName("지원하지 않는 메서드는 405 METHOD_NOT_ALLOWED")
     void methodNotAllowed() throws Exception {
-        mockMvc.perform(post(PROBE + "/denied").with(user("alice")))
+        mockMvc.perform(post(PROBE + "/denied").with(user("alice")).with(csrf()))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"));
     }

@@ -10,6 +10,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -28,12 +29,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ProblemDetail> handleBusiness(BusinessException e) {
-        return problem(e.getErrorCode(), e.getMessage());
+        ResponseEntity<ProblemDetail> response = problem(e.getErrorCode(), e.getMessage());
+        e.getProperties().forEach(response.getBody()::setProperty);
+        return response;
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ProblemDetail> handleAuthentication(AuthenticationException e) {
         return problem(ErrorCode.UNAUTHENTICATED, ErrorCode.UNAUTHENTICATED.getMessage());
+    }
+
+    @ExceptionHandler(CsrfException.class)
+    public ResponseEntity<ProblemDetail> handleCsrf(CsrfException e) {
+        return problem(ErrorCode.CSRF_INVALID, ErrorCode.CSRF_INVALID.getMessage());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
