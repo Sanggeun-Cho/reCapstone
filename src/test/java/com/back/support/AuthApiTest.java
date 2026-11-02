@@ -35,6 +35,7 @@ import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 회원·인증 API 테스트 베이스. 사용자 생성, 로그인, 메일 토큰 추출, TOTP 코드 계산을 돕는다.
@@ -70,11 +71,22 @@ public abstract class AuthApiTest extends ApiTest {
     protected ToggleableWithdrawalGuard withdrawalGuard;
 
     @Autowired
+    protected TransactionTemplate transactionTemplate;
+
+    @Autowired
+    protected FakeHandoverStatus handoverStatus;
+
+    @Autowired
     private FilterChainProxy springSecurityFilterChain;
 
     @AfterEach
     void cleanUpAuthState() throws Exception {
-        jdbcTemplate.execute("TRUNCATE recovery_code, users RESTART IDENTITY CASCADE");
+        // 추가 전용 이력 테이블도 CASCADE로 비우므로 영구 삭제와 같은 표시(app.purge)를 켠 트랜잭션에서 지운다
+        transactionTemplate.executeWithoutResult(status -> {
+            jdbcTemplate.queryForObject("SELECT set_config('app.purge', 'on', true)", String.class);
+            jdbcTemplate.execute("TRUNCATE recovery_code, users RESTART IDENTITY CASCADE");
+        });
+        handoverStatus.reset();
         redis.execute(connection -> {
             connection.serverCommands().flushDb();
             return null;
