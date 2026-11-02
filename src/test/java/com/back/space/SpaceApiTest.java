@@ -40,8 +40,8 @@ class SpaceApiTest extends GroupTestSupport {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"123456789012345678901234567890123456789012345678901", " "})
-    @DisplayName("SPC-01c: 이름이 51자이거나 공백뿐이면 400")
+    @ValueSource(strings = {"123456789012345678901234567890123456789012345678901", " ", "　　"})
+    @DisplayName("SPC-01c: 이름이 51자이거나 공백(전각 공백 포함)뿐이면 400")
     void createInvalidName(String name) throws Exception {
         post("/api/v1/groups/" + g + "/spaces", ALICE, body("\"name\":\"" + name + "\""))
                 .andExpect(status().isBadRequest());

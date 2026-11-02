@@ -54,6 +54,22 @@ class OwnerTransferApiTest extends GroupTestSupport {
     }
 
     @Test
+    @DisplayName("GRP-08b: 재확인 값이 아예 없으면 400 REAUTH_FAILED이지만 로그인 실패 횟수에는 넣지 않는다")
+    void missingReauthNotCounted() throws Exception {
+        for (int i = 0; i < 6; i++) {
+            post(transferUrl(), ALICE, body("\"userId\":" + dave))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("REAUTH_FAILED"));
+            post(transferUrl(), ALICE, body("\"userId\":" + dave + ",\"reauth\":{}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("REAUTH_FAILED"));
+        }
+
+        login(ALICE, PASSWORD).andExpect(status().isOk());
+        post(transferUrl(), ALICE, body("\"userId\":" + dave + "," + REAUTH)).andExpect(status().isOk());
+    }
+
+    @Test
     @DisplayName("GRP-08c: OWNER가 아니면 양도할 수 없다 (403)")
     void onlyOwner() throws Exception {
         post(transferUrl(), BOB, body("\"userId\":" + dave + "," + REAUTH)).andExpect(status().isForbidden());

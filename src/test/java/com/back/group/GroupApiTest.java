@@ -40,8 +40,8 @@ class GroupApiTest extends GroupTestSupport {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "   ", "123456789012345678901234567890123456789012345678901"})
-    @DisplayName("GRP-02: 그룹 이름이 비었거나 공백뿐이거나 51자면 400")
+    @ValueSource(strings = {"", "   ", "　　", "123456789012345678901234567890123456789012345678901"})
+    @DisplayName("GRP-02: 그룹 이름이 비었거나 공백(전각 공백 포함)뿐이거나 51자면 400")
     void invalidName(String name) throws Exception {
         post("/api/v1/groups", CAROL, body("\"name\":\"" + name + "\""))
                 .andExpect(status().isBadRequest())

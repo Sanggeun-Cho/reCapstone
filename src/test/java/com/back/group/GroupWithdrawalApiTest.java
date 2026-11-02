@@ -2,6 +2,8 @@ package com.back.group;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,6 +73,29 @@ class GroupWithdrawalApiTest extends GroupTestSupport {
         jdbcTemplate.update("UPDATE space SET deleted_at = now() WHERE id = ?", s3);
 
         withdraw(DAVE).andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("정책 2.6 제4항: 보관 중인 그룹의 멤버(담당자 포함)가 탈퇴하면, 그룹을 복구해도 멤버와 담당자로 다시 나오지 않는다")
+    void withdrawnMemberNotRestored() throws Exception {
+        post("/api/v1/groups/" + g + "/deletion", ALICE, body("\"confirmName\":\"G\"," + REAUTH))
+                .andExpect(status().isNoContent());
+
+        withdraw(BOB).andExpect(status().isNoContent());
+        withdraw(DAVE).andExpect(status().isNoContent());
+        // 복구는 운영자가 DB에서 한다 (정책 2.6 제2항, PURGE-04와 같은 방식)
+        jdbcTemplate.update("UPDATE groups SET deleted_at = NULL WHERE id = ?", g);
+
+        get("/api/v1/groups/" + g + "/members", ALICE)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].userId", containsInAnyOrder((int) alice, (int) carol)));
+        get("/api/v1/spaces/" + s, ALICE)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assignee").value(nullValue()));
+        assertThat(count("""
+                SELECT count(*) FROM group_member_history
+                WHERE group_id = ? AND type = 'LEFT' AND user_id = actor_id AND user_id IN (?, ?)
+                """, g, bob, dave)).isEqualTo(2);
     }
 
     private ResultActions withdraw(String email) throws Exception {

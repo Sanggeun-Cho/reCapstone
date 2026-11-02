@@ -30,8 +30,10 @@ class SpaceAccessPolicyTest {
 
     static Stream<Arguments> matrix() {
         return Stream.of(
-                Arguments.of("OWNER", OWNER, ASSIGNEE, false, EnumSet.of(Action.READ, Action.MANAGE, Action.DELETE_REQUEST)),
-                Arguments.of("담당자", ASSIGNEE, ASSIGNEE, false, EnumSet.of(Action.READ, Action.WRITE, Action.DELETE_REQUEST)),
+                Arguments.of("OWNER", OWNER, ASSIGNEE, false,
+                        EnumSet.of(Action.READ, Action.MANAGE, Action.DELETE_REQUEST, Action.VIEW_HISTORY)),
+                Arguments.of("담당자", ASSIGNEE, ASSIGNEE, false,
+                        EnumSet.of(Action.READ, Action.WRITE, Action.DELETE_REQUEST, Action.VIEW_HISTORY)),
                 Arguments.of("OWNER+담당자", OWNER, OWNER, false, EnumSet.allOf(Action.class)),
                 Arguments.of("그 외 멤버", MEMBER, ASSIGNEE, false, EnumSet.noneOf(Action.class)),
                 Arguments.of("그룹 밖", OUTSIDER, ASSIGNEE, false, EnumSet.noneOf(Action.class)),
