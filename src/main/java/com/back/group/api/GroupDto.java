@@ -10,8 +10,11 @@ import java.time.Instant;
 
 public final class GroupDto {
 
-    /** 앞뒤 공백을 뺀 길이가 1~50자인 이름. 공백만 있는 값은 {@code @NotBlank}가 막는다. */
-    public static final String NAME_PATTERN = "(?s)\\s*\\S(?:.{0,48}\\S)?\\s*";
+    /**
+     * 앞뒤 공백을 뺀 길이가 1~50자인 이름. 서비스는 {@code strip()}으로 유니코드 공백(전각 공백 등)까지 지우므로
+     * 패턴도 {@code (?U)}로 유니코드 공백을 공백으로 본다. 그래야 검증을 통과한 이름이 공백을 지운 뒤 비거나 길이 판정이 어긋나지 않는다.
+     */
+    public static final String NAME_PATTERN = "(?sU)\\s*\\S(?:.{0,48}\\S)?\\s*";
     public static final String NAME_MESSAGE = "앞뒤 공백을 뺀 1~50자여야 합니다.";
 
     /** 탈퇴한 사용자의 이름 대신 보여 주는 표시 (정책 7.8 제3항). */

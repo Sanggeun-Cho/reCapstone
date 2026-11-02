@@ -41,7 +41,7 @@ public class SpaceQueryServiceImpl implements SpaceQueryService {
 
     @Override
     public List<SpaceDto.AssignmentChangeRes> assignmentChanges(long userId, long spaceId) {
-        accessPolicy.checkAndGet(userId, spaceId, Action.DELETE_REQUEST);
+        accessPolicy.checkAndGet(userId, spaceId, Action.VIEW_HISTORY);
         return mapper.findAssignmentChanges(spaceId, GroupDto.WITHDRAWN_USER_NAME).stream()
                 .map(row -> new SpaceDto.AssignmentChangeRes(row.id(), row.type(),
                         ref(row.fromUserId(), row.fromUserName()), ref(row.toUserId(), row.toUserName()),

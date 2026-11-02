@@ -51,4 +51,15 @@ public class GroupMembership {
         memberRepository.deleteById(new GroupMember.Id(groupId, userId));
         historyRepository.save(new GroupMemberHistory(groupId, userId, type, actorId, at));
     }
+
+    /**
+     * 삭제되어 보관 중인 그룹에서 탈퇴자를 뺀다. 그룹이 복구되어도 탈퇴자가 멤버나 담당자로 돌아오지 않게 한다 (정책 2.6 제4항).
+     * 보관 중인 그룹의 지위는 탈퇴를 막지 않으므로(정책 7.8 제1항) 담당 여부를 검사하지 않고 비운다.
+     * 호출한 쪽이 그룹 행을 잠근 상태여야 한다.
+     */
+    public void departArchived(long groupId, long userId, Instant at) {
+        spaceRepository.clearAllAssignmentsInGroup(groupId, userId);
+        memberRepository.deleteById(new GroupMember.Id(groupId, userId));
+        historyRepository.save(new GroupMemberHistory(groupId, userId, GroupMemberHistory.Type.LEFT, userId, at));
+    }
 }

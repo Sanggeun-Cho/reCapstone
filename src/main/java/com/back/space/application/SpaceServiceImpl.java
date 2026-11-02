@@ -40,7 +40,8 @@ public class SpaceServiceImpl implements SpaceService {
     @Override
     @Transactional
     public SpaceDto.Res create(long userId, long groupId, SpaceDto.NameReq req) {
-        groupAccessPolicy.checkAndGet(userId, groupId, GroupAccessPolicy.Action.MANAGE);
+        // 그룹 삭제와 엇갈려 삭제된 그룹에 스페이스가 생기지 않도록 그룹 행을 잠근다
+        groupAccessPolicy.checkAndLock(userId, groupId, GroupAccessPolicy.Action.MANAGE);
         Space space = spaceRepository.save(new Space(groupId, req.name().strip()));
         return toRes(space);
     }
