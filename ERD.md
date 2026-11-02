@@ -109,7 +109,8 @@ erDiagram
 ```
 
 - `group_member`는 soft delete하지 않는다. 감사 필드와 `deleted_at`도 없다 (현재 멤버만 둔다).
-- `group_member_history`, `assignment_change`는 추가 전용이다. 감사 필드와 `deleted_at`이 없고, 트리거 `reject_append_only_modification()`이 UPDATE·DELETE·TRUNCATE를 거부한다. 영구 삭제 트랜잭션(`app.purge = 'on'`)에서만 DELETE·TRUNCATE를 허용한다.
+- `group_member_history`, `assignment_change`는 추가 전용이다. 트리거 `reject_append_only_modification()`이 UPDATE·DELETE·TRUNCATE를 거부하고, 영구 삭제 트랜잭션(`app.purge = 'on'`)에서만 DELETE·TRUNCATE를 허용한다.
+  - 이 두 테이블은 감사 필드와 `deleted_at`이 없다(코드 규약의 예외). 행을 바꿀 수 없으니 수정·삭제 정보가 생길 수 없고, 생성 정보는 `actor_id`·`occurred_at`이 담는다 (`DESIGN_REVIEW.md` 6.5).
 - 보관 중인 스페이스에서 담당하던 멤버가 그룹을 떠나면 그 스페이스의 `assignee_id`를 비운다 (복합 FK, 정책 2.6 제4항).
 
 ### DB 밖에 두는 상태 (Redis)

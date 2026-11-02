@@ -45,6 +45,8 @@ ALTER TABLE groups
     ADD CONSTRAINT fk_groups_owner_member FOREIGN KEY (id, owner_id)
         REFERENCES group_member (group_id, user_id) DEFERRABLE INITIALLY DEFERRED;
 
+-- 추가 전용 이력. 감사 필드와 deleted_at을 두지 않는다(코드 규약의 예외):
+-- 트리거가 UPDATE를 막아 수정·삭제 정보가 생길 수 없고, 생성 정보는 actor_id·occurred_at이 담는다
 CREATE TABLE group_member_history
 (
     id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -109,6 +111,7 @@ CREATE TABLE space
 CREATE INDEX ix_space_group ON space (group_id) WHERE deleted_at IS NULL;
 CREATE INDEX ix_space_assignee ON space (assignee_id) WHERE deleted_at IS NULL;
 
+-- 추가 전용 이력. group_member_history와 같은 이유로 감사 필드와 deleted_at을 두지 않는다
 CREATE TABLE assignment_change
 (
     id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

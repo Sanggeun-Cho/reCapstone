@@ -16,7 +16,10 @@ import org.hibernate.annotations.Immutable;
 
 /**
  * 담당자 변경 이력. 추가 전용이며 DB 트리거가 UPDATE·DELETE를 거부한다 (정책 3.2 제3항).
- * 행이 바뀌지 않으므로 감사 필드와 {@code deleted_at}을 두지 않는다.
+ * <p>
+ * 코드 규약과 달리 감사 필드와 {@code deleted_at}을 두지 않고 {@code BaseEntity}도 상속하지 않는다.
+ * 행을 바꿀 수 없으니 수정자·수정 시각·삭제 시각은 생길 수 없고, 누가 언제 남겼는지는 {@code actorId}·{@code occurredAt}이 담는다.
+ * {@code BaseEntity}를 상속하면 막힌 경로인 {@code softDelete()}가 열리게 된다. 지우는 것은 영구 삭제 작업뿐이다.
  */
 @Getter
 @Entity
