@@ -50,4 +50,21 @@ class OpenApiDocsApiTest extends ApiTest {
                 .andExpect(jsonPath("$.components.schemas.ProblemDetail.properties.code.enum",
                         hasItems("ACCOUNT_LOCKED", "EMAIL_NOT_VERIFIED", "REAUTH_FAILED", "CSRF_INVALID")));
     }
+
+    @Test
+    @DisplayName("S2: 그룹·초대·스페이스·삭제 요청 엔드포인트와 새 오류 코드가 노출된다")
+    void groupEndpointsExposed() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/groups'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/groups/{groupId}/owner-transfer'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/groups/{groupId}/invitations'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/invitations/{invitationId}/accept'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/users/me/invitations'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/spaces/{spaceId}/forced-reassignment'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/spaces/{spaceId}/deletion-request/approve'].post").exists())
+                .andExpect(jsonPath("$.components.schemas.ProblemDetail.properties.code.enum",
+                        hasItems("NOT_GROUP_MEMBER", "OWNER_MUST_TRANSFER", "HANDOVER_IN_PROGRESS",
+                                "INVITATION_NOT_PENDING", "SELF_APPROVAL_NOT_ALLOWED")));
+    }
 }

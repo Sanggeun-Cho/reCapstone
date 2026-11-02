@@ -38,7 +38,20 @@ public enum ErrorCode {
     TWO_FACTOR_NOT_ENABLED(HttpStatus.CONFLICT, "2단계 인증이 켜져 있지 않습니다."),
     TWO_FACTOR_SETUP_REQUIRED(HttpStatus.CONFLICT, "2단계 인증 등록을 먼저 시작하세요."),
     TWO_FACTOR_CODE_MISMATCH(HttpStatus.BAD_REQUEST, "인증 앱의 코드가 올바르지 않습니다."),
-    WITHDRAWAL_BLOCKED(HttpStatus.CONFLICT, "지금은 탈퇴할 수 없습니다.");
+    WITHDRAWAL_BLOCKED(HttpStatus.CONFLICT, "지금은 탈퇴할 수 없습니다."),
+
+    // 그룹·스페이스 (정책 제2장, 제3장)
+    NOT_GROUP_MEMBER(HttpStatus.BAD_REQUEST, "그룹 멤버만 지정할 수 있습니다."),
+    ALREADY_GROUP_MEMBER(HttpStatus.CONFLICT, "이미 그룹 멤버입니다."),
+    OWNER_MUST_TRANSFER(HttpStatus.CONFLICT, "OWNER는 먼저 다른 멤버에게 양도해야 합니다."),
+    MEMBER_HAS_RESPONSIBILITY(HttpStatus.CONFLICT, "담당 중인 스페이스나 진행 중인 인계가 있는 멤버입니다."),
+    HANDOVER_IN_PROGRESS(HttpStatus.CONFLICT, "인계가 진행 중이라 변경할 수 없습니다."),
+    ASSIGNEE_ALREADY_SET(HttpStatus.CONFLICT, "이미 담당자가 있습니다. 담당자를 바꾸려면 인계나 긴급 재지정을 하세요."),
+    GROUP_NAME_MISMATCH(HttpStatus.BAD_REQUEST, "그룹 이름이 일치하지 않습니다."),
+    INVITATION_NOT_PENDING(HttpStatus.CONFLICT, "대기 중인 초대가 아닙니다."),
+    DELETION_REQUEST_EXISTS(HttpStatus.CONFLICT, "대기 중인 삭제 요청이 이미 있습니다."),
+    DELETION_REQUEST_NOT_PENDING(HttpStatus.CONFLICT, "대기 중인 삭제 요청이 없습니다."),
+    SELF_APPROVAL_NOT_ALLOWED(HttpStatus.CONFLICT, "요청한 사람은 스스로 승인하거나 거절할 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;

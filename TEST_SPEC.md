@@ -16,7 +16,7 @@
 | `dave` | G 멤버. S와는 무관 (같은 그룹의 제3자) |
 | `mallory` | G에 속하지 않은 가입 사용자 (그룹 밖 제3자) |
 | `anon` | 비로그인 |
-| `G` / `S` | `alice`가 그룹 G와 스페이스 S를 생성한다. bob, carol, dave를 G 멤버로 추가하고, S의 첫 담당자로 bob을 지정한다 |
+| `G` / `S` | `alice`가 그룹 G와 스페이스 S를 생성한다. bob, carol, dave를 G에 초대하고 각자 수락한다(초대 자체를 검증하지 않는 테스트에서는 DB에 직접 넣어도 된다). S의 첫 담당자로 bob을 지정한다 |
 | 레벨 | **U** 도메인·서비스 단위 테스트 / **I** 통합 테스트(DB 포함) / **A** API 테스트(MockMvc, 인가·직렬화) |
 
 공통 응답 규약: 성공 2xx (생성은 201). 실패 시 RFC 9457 `ProblemDetail` + 도메인 오류 코드(`code`). 아래 케이스의 오류 메시지는 `detail`에 들어간다. 원본의 실패 응답은 `{"message": "..."}`였다.
@@ -95,11 +95,13 @@
 | 기능 | anon | mallory(그룹 밖) | dave(같은 그룹, 무관) | carol(인수자) | bob(담당자) | alice(OWNER) |
 |---|---|---|---|---|---|---|
 | 스페이스 상세 조회 | 401 ⚠️(200) | 403 ⚠️(200) | 403 | 200 | 200 | 200 |
-| 스페이스 생성·업무명 수정·삭제 | 401 | 403 ⚠️(200) | 403 | 403 | 403 ⚠️(200) | 200 |
+| 스페이스 생성·이름 변경 | 401 | 403 ⚠️(200) | 403 | 403 | 403 ⚠️(200) | 200 |
+| 스페이스 삭제 요청·승인 (본인 재확인, 양쪽 동의) | 401 | 403 | 403 | 403 | 200 | 200 |
 | 첫 담당자 지정 (담당자 없는 스페이스) | 401 | 403 | 403 | – | – | 200 |
 | 긴급 담당자 재지정 (사유 필수) | 401 | 403 | 403 | 403 | 403 | 200 |
 | 그룹명 수정·삭제, OWNER 양도 | 401 | 403 | 403 | 403 | 403 | 200 |
-| 그룹 멤버 추가·제거 | 401 | 403 | 403 | 403 | 403 | 200 |
+| 그룹 멤버 초대·초대 취소·제거, 멤버 이력 조회 | 401 | 403 | 403 | 403 | 403 | 200 |
+| 그룹 상세·멤버 목록 조회 | 401 | 403 | 200 | 200 | 200 | 200 |
 | 파일 목록 조회 | 401 | 403 | 403 | 200 | 200 | 200 |
 | 파일 업로드·폴더 생성 | 401 | 403 | 403 | 403 | 200 | 403 |
 | 파일 다운로드 (id) | 401 ⚠️(200) | 403 ⚠️(200) | 403 | 200 | 200 | 200 |
@@ -116,45 +118,114 @@
 다음 API는 재구현에서 **만들지 않는다.** 존재하지 않음을 OpenAPI 스펙에서 확인한다.
 - 멤버십 직접 생성·수정 API: 현행에서는 anon과 mallory도 200 ⚠️. 유스케이스 API로 대체한다.
 - 서명 단계 강제 변경 API: 현행에서는 누구나 200 ⚠️.
-- 권한(RBAC) 부여 API: 현행에서는 anon도 200 ⚠️. `🔁 D-8`에서 RBAC 테이블 폐기 여부를 확정한다.
+- 권한(RBAC) 부여 API: 현행에서는 anon도 200 ⚠️. RBAC 테이블은 만들지 않는다 (`DESIGN_REVIEW.md` 6.5).
+- 그룹 멤버 직접 추가 API: 가입은 초대 수락으로만 한다 (정책 2.4).
+- 그룹·스페이스 복구 API: 복구는 운영자가 처리한다 (정책 2.6).
 
-## 3. 그룹 · 스페이스 (GRP / SPC)
+## 3. 그룹 · 스페이스 (GRP / INV / SPC / SDEL / PURGE)
 
+> 기준: [`정책.md`](./정책.md) 제2장, 제3장, 4.3. 경계값과 실패 경로를 포함한 세부 케이스와 테스트 클래스 대응은 이슈 [#8](https://github.com/Sanggeun-Cho/reCapstone/issues/8)의 테스트 명세에 있다.
+> "진행 중 인계"가 전제인 케이스(GRP-06, GRP-11a, SPC-02, SPC-13, SDEL-13·14)는 S2에서 확장 지점만 만들고, S5에서 실제 인계로 검증한다.
+
+### 3.1 그룹 (GRP)
 | ID | 레벨 | 전제 | 행위 | 기대 결과 |
 |---|---|---|---|---|
-| GRP-01 | I | alice 로그인 | 그룹 생성 `{groupName, spaces:[{workName:"S1"}, {workName:"S2"}]}` | 그룹 1, 스페이스 2. owner=alice, created_by=alice, alice는 G 멤버. 두 스페이스 모두 담당자 미배정 (⚠️ as-is: 각 스페이스에 alice=관리자, 담당자는 이메일로 지정되거나 요청자) |
-| GRP-02 | A | – | spaces가 빈 배열이거나 없음 | 400 "최소 하나의 스페이스를 포함해야..." |
-| GRP-03 | I | mallory는 G 멤버가 아님 | alice가 S의 첫 담당자로 mallory 지정 | 400 "그룹 멤버만 담당자로 지정할 수 있습니다." (⚠️ as-is: 없는 이메일이면 요청자가 담당자가 됨) |
-| GRP-04 | I | 스페이스 2개 중 2번째 생성 실패 | 그룹 생성 | 전체 롤백 (⚠️ as-is: 그룹과 1번째 스페이스가 남음) |
-| GRP-05 | I | G에 스페이스 2개 | 그룹 삭제 | 그룹·스페이스·멤버십 모두 soft delete |
-| GRP-06 | I | G의 스페이스 하나가 인계 진행 중 | 그룹 삭제 | 409, 전체 롤백 |
-| GRP-07 | A | alice | 내가 OWNER인 그룹 목록 (cursor, perPage, orderWay) | OWNER인 그룹만, 커서 기준 정렬·개수 정확 |
-| GRP-08 | I | alice가 OWNER | dave에게 OWNER 양도 | owner=dave, created_by=alice 그대로. 이후 alice의 그룹 관리 요청은 403 |
-| GRP-09 | I | – | G 멤버가 아닌 mallory에게 OWNER 양도 | 400 |
-| GRP-10 | I | – | OWNER alice가 양도 전에 그룹 탈퇴, 또는 멤버 목록에서 자신을 제거 | 409 |
-| GRP-11 | I | bob이 S 담당자 | alice가 G에서 bob 제거 | 409 (먼저 인계하거나 긴급 재지정해야 함. DB 복합 FK로도 거부됨). SPC-12 이후에는 제거 성공 |
+| GRP-01 | I | alice 로그인 | 그룹 생성 `{name}` | 201. owner=alice, created_by=alice, alice는 G 멤버, `group_member_history`에 JOINED 1건. 스페이스 없음 (⚠️ as-is: 그룹과 스페이스 1개 이상을 한 번에 생성) |
+| GRP-02 | A | – | 이름이 공백이거나 길이 초과 | 400 |
+| GRP-04 | – | (삭제) | – | 그룹을 단독으로 만들므로 "스페이스 생성 중 일부 실패" 롤백 케이스가 없어짐 |
+| GRP-05 | I | G에 스페이스 2개, 대기 중인 초대 1건 | alice가 그룹 이름 입력과 본인 재확인 후 삭제 | 204. 그룹 행에만 `deleted_at`. 이후 G와 그 스페이스는 모든 사용자에게 404이고 목록에서 사라짐. 대기 중인 초대는 수락할 수 없음 |
+| GRP-05a | A | – | 그룹 이름 불일치 / 재확인 없음·틀림 | 400 `GROUP_NAME_MISMATCH` / 400 `REAUTH_FAILED`. 삭제되지 않음 |
+| GRP-06 | I | G의 스페이스 하나가 인계 진행 중 | 그룹 삭제 | 409 `HANDOVER_IN_PROGRESS`, 변화 없음 (S5) |
+| GRP-07 | A | alice는 G의 OWNER, dave는 G의 멤버 | 내 그룹 목록 (커서) | 각자 멤버인 그룹만, OWNER 여부 표시. 커서 기준 정렬·개수 정확. 삭제된 그룹 제외 (⚠️ as-is: OWNER인 그룹만) |
+| GRP-08 | I | alice가 OWNER | 본인 재확인 후 dave에게 양도 | owner=dave, created_by=alice 그대로. alice는 멤버로 남고, 이후 alice의 그룹 관리 요청은 403 |
+| GRP-09 | I | – | G 멤버가 아닌 mallory에게 양도 | 400 `NOT_GROUP_MEMBER` |
+| GRP-10 | I | – | OWNER alice가 양도 전에 그룹 나가기, 또는 자신을 제거 | 409 `OWNER_MUST_TRANSFER` |
+| GRP-11 | I | bob이 S 담당자 | alice가 bob 제거 / bob이 스스로 나가기 | 409 `MEMBER_HAS_RESPONSIBILITY` (DB 복합 FK로도 거부됨). SPC-12 이후에는 성공 |
+| GRP-11a | I | carol이 진행 중 인계의 인수자 | alice가 carol 제거 / carol이 나가기 | 409 `MEMBER_HAS_RESPONSIBILITY` (S5) |
 | GRP-12 | I | DB 직접 삽입 | 그룹 멤버가 아닌 사용자를 `space.assignee_id`나 `group.owner_id`에 넣음 | FK 제약 위반 |
-| GRP-13 | I | dave가 G 멤버 | alice가 dave 제거 → 다시 추가 → dave 스스로 탈퇴 | `group_member`에는 현재 상태만 남음. `group_member_history`에는 JOINED → REMOVED → JOINED → LEFT 네 건이 실행자·시각과 함께 쌓임 |
-| GRP-14 | I | 이력 존재 | `group_member_history` 행을 UPDATE 또는 DELETE (DB 직접) | DB 트리거가 거부 |
-| GRP-15 | I | 제거된 멤버 | 그 사용자를 S의 담당자로 지정 (DB 직접 삽입 포함) | 애플리케이션 400, DB에서도 FK 위반 |
-| SPC-01 | U | – | 스페이스 생성 | `spaceCode`는 서버가 UUID로 발급 (요청값 무시) `🔁 1.9` |
-| SPC-02 | I | 진행 중 인계 있음 | 스페이스 수정·삭제 | 409 "현재 인수인계가 진행 중이므로..." (⚠️ as-is 400) |
-| SPC-03 | I | – | 스페이스 삭제 | 스페이스와 하위 데이터 처리 `🔁 D-11` (별도의 스페이스 멤버십은 없음) |
-| SPC-04 | A | bob | 대시보드 내 스페이스 (page) | 본인이 참여한 스페이스(담당자이거나 진행 중 인계의 인수자), 페이지당 7개, `{callPage,totalPage,listCount,list}` |
-| SPC-05 | U | listCount=0 | 페이지 응답 | totalPage=1, callPage=1 |
-| SPC-06 | U | callPage > totalPage | 페이지 응답 | callPage=totalPage로 보정 |
-| SPC-07 | A | bob | 프로필 내 스페이스 (cursor) | 본인이 참여한 스페이스 |
-| SPC-08 | A | alice | 그룹 관리 화면의 스페이스 목록 (groupId) | G의 모든 스페이스. 스페이스명, 담당자명(미배정이면 null), 진행 중 인계 id 포함 |
-| SPC-09 | A | dave (G 멤버) | G의 스페이스 목록 또는 S 상세 조회 | 403. 대시보드에도 S가 나타나지 않음 |
+| GRP-13 | I | dave가 G 멤버 | alice가 dave 제거 → 다시 초대, dave 수락 → dave 스스로 나가기 | `group_member`에는 현재 상태만 남음. `group_member_history`에는 JOINED → REMOVED → JOINED → LEFT 네 건이 실행자·시각과 함께 쌓임 |
+| GRP-14 | I | 이력 존재 | `group_member_history` 행을 UPDATE, DELETE, TRUNCATE (DB 직접, 정리 작업 설정 없이) | DB 트리거가 거부 |
+| GRP-15 | I | 제거된 멤버 | 그 사용자를 S의 담당자로 지정 (DB 직접 삽입 포함) | 애플리케이션 400 `NOT_GROUP_MEMBER`, DB에서도 FK 위반 |
+| GRP-16 | A | bob이 업무용 전화번호 등록 | dave(G 멤버)와 mallory(그룹 밖)가 G 상세·멤버 목록 조회 | dave: 200, 그룹 이름, OWNER, 멤버의 이름·이메일·업무용 전화번호. mallory: 403 |
+| GRP-17 | A | – | 멤버 이력 조회 (alice / dave) | alice 200, 시간순 / dave 403 |
+| GRP-18 | A | – | 그룹 이름 수정 (alice / bob) | 200 / 403 |
+
+### 3.2 초대 (INV)
+| ID | 레벨 | 전제 | 행위 | 기대 결과 |
+|---|---|---|---|---|
+| INV-01 | I | carol은 가입했고 G 멤버가 아님 | alice가 carol의 이메일로 초대 | 201. 대기 중 초대 1건, 만료는 7일 뒤. 커밋 후 초대 메일 1통(링크는 받은 초대 화면) |
+| INV-02 | I | 가입하지 않은 이메일 `new@` | alice가 초대 → `new@`로 가입·인증 | 초대 201, 메일 발송. 인증 후 받은 초대 목록에 그 초대가 보임 |
+| INV-03 | A | carol에게 대기 중 초대 2건(G, H), 만료·취소된 초대 1건 | carol이 받은 초대 목록 조회 | 대기 중이고 만료 전인 2건만 `{id, groupName, inviterName, expiresAt}` |
+| INV-04 | I | carol에게 대기 중 초대 | carol이 수락 | 200. carol이 G 멤버가 됨. `group_member_history`에 JOINED(실행자 carol). 초대는 수락됨 |
+| INV-05 | A | carol에게 온 초대 | mallory가 그 초대를 수락·거절 | 404 (남의 초대가 있다는 사실을 드러내지 않음) |
+| INV-06 | I | 초대 후 7일 경과 | carol이 수락 | 409 `INVITATION_NOT_PENDING`. 목록에서도 사라짐 |
+| INV-07 | I | 대기 중 초대 | carol이 거절 | 204. 멤버가 아님. 이후 다시 초대할 수 있음 |
+| INV-08 | I | 대기 중 초대 | alice가 취소 → carol이 수락 | 취소 204 / 수락 409 `INVITATION_NOT_PENDING` |
+| INV-09 | I | carol에게 대기 중 초대 | alice가 같은 이메일로 다시 초대 | 201. 이전 초대는 무효, 대기 중 초대는 1건 |
+| INV-10 | A | dave는 이미 G 멤버 | dave 이메일로 초대 | 409 `ALREADY_GROUP_MEMBER` |
+| INV-11 | A | – | bob(OWNER 아님)이 초대, 그룹의 초대 목록 조회, 초대 취소 | 403 |
+| INV-12 | A | – | 이메일 형식 오류 | 400 |
+| INV-13 | I | – | 가입한 이메일과 가입하지 않은 이메일로 각각 초대 | 두 응답의 형태가 같음 (가입 여부를 드러내지 않음) |
+| INV-14 | I | 대기 중 초대가 있는 G가 삭제됨 | carol이 수락 / 목록 조회 | 409 `INVITATION_NOT_PENDING` / 목록에 없음 |
+| INV-15 | A | 대기·수락·만료된 초대 | alice가 G의 초대 목록 조회 | 대기 중인 초대만 |
+
+### 3.3 스페이스와 담당자 (SPC)
+| ID | 레벨 | 전제 | 행위 | 기대 결과 |
+|---|---|---|---|---|
+| SPC-01 | A | – | alice가 스페이스 생성 `{name}` | 201. 담당자 없음. `spaceCode` 없음 (⚠️ as-is: 서버가 UUID `spaceCode` 발급) |
+| SPC-02 | I | 진행 중 인계 있음 | 스페이스 이름 변경, 삭제 요청 | 409 `HANDOVER_IN_PROGRESS` (S5) (⚠️ as-is 400) |
+| SPC-03 | I | – | 스페이스 삭제 완료 | 스페이스 행에만 `deleted_at`. 하위 자료는 스페이스 상태로 판정 (SDEL, PURGE) |
+| SPC-04 | A | bob | 대시보드 내 스페이스 (page) | 본인이 참여한 스페이스(담당자이거나 진행 중 인계의 인수자), 페이지당 7개, `{callPage,totalPage,listCount,list}` (S7) |
+| SPC-05 | U | listCount=0 | 페이지 응답 | totalPage=1, callPage=1 (S7) |
+| SPC-06 | U | callPage > totalPage | 페이지 응답 | callPage=totalPage로 보정 (S7) |
+| SPC-07 | A | bob | 프로필 내 스페이스 (cursor) | 본인이 참여한 스페이스 (S7) |
+| SPC-08 | A | alice | 그룹 관리 화면의 스페이스 목록 (G, page) | G의 삭제되지 않은 모든 스페이스. 스페이스명, 담당자명(미배정이면 null), 진행 중 인계 id(S5 전에는 null), 대기 중 삭제 요청 여부 |
+| SPC-09 | A | dave (G 멤버) | G의 스페이스 목록 또는 S 상세 조회 | 403 |
 | SPC-10 | I | S2 담당자 없음 | alice가 S2의 첫 담당자로 carol 지정 | S2.assignee=carol. `AssignmentChange(INITIAL)` 기록, 인계 프로세스 없음 |
-| SPC-11 | I | S 담당자=bob | alice가 첫 담당자 지정 API로 carol 지정 | 409 "담당자 변경은 인계 절차 또는 긴급 재지정으로만 할 수 있습니다." |
+| SPC-11 | I | S 담당자=bob | alice가 첫 담당자 지정 API로 carol 지정 | 409 `ASSIGNEE_ALREADY_SET` "담당자 변경은 인계 절차 또는 긴급 재지정으로만 할 수 있습니다." |
 | SPC-12 | I | S 담당자=bob, 인계 없음 | alice가 사유와 함께 carol로 긴급 재지정 | S.assignee=carol, `AssignmentChange(FORCED, from=bob, to=carol, 실행자=alice, 사유)` 기록. bob은 이후 S 접근 시 403 |
-| SPC-13 | I | bob→carol 인계 진행 중 | alice가 dave로 긴급 재지정 | 진행 중 인계가 "긴급 재지정" 사유로 취소되고 잠금이 풀림. carol 읽기 권한 소멸, S.assignee=dave |
-| SPC-14 | A | – | 사유 없이 긴급 재지정 / G 멤버가 아닌 mallory로 재지정 | 400 / 400 |
+| SPC-13 | I | bob→carol 인계 진행 중 | alice가 dave로 긴급 재지정 | 진행 중 인계가 "긴급 재지정" 사유로 취소되고 잠금이 풀림. carol 읽기 권한 소멸, S.assignee=dave (S5) |
+| SPC-14 | A | – | 사유 없이 긴급 재지정 / G 멤버가 아닌 mallory로 재지정 | 400 / 400 `NOT_GROUP_MEMBER` |
 | SPC-15 | I | – | alice가 대상 없이(null) 긴급 재지정 → 이후 carol 지정 | 첫 단계에서 S 담당자 미배정, `FORCED(to=null)` 기록. 다음 지정은 `REFILL`로 기록 (`INITIAL` 아님) |
-| SPC-16 | A | S | 담당자 변경 이력 조회 (alice) | INITIAL → HANDOVER → FORCED → REFILL 순서로 유형·이전·새 담당자·실행자·사유·시각 반환 |
+| SPC-16 | A | S | 담당자 변경 이력 조회 (alice) | INITIAL → HANDOVER → FORCED → REFILL 순서로 유형·이전·새 담당자·실행자·사유·시각 반환 (HANDOVER는 S5) |
 | SPC-17 | I | 담당자가 있었던 적이 없는 스페이스 | 첫 지정 | `INITIAL`로 기록 |
-| SPC-18 | I | 변경 이력 존재 | `assignment_change` 행을 UPDATE 또는 DELETE (DB 직접) | DB 트리거가 거부 |
+| SPC-18 | I | 변경 이력 존재 | `assignment_change` 행을 UPDATE, DELETE, TRUNCATE (DB 직접, 정리 작업 설정 없이) | DB 트리거가 거부 |
+| SPC-19 | A | – | S 상세 조회 (alice / bob) | 200. 스페이스명, 그룹, 담당자. 삭제된 스페이스는 404 |
+| SPC-20 | A | – | 스페이스 이름 변경 (alice / bob) | 200 / 403 |
+
+### 3.4 스페이스 삭제 (SDEL)
+| ID | 레벨 | 전제 | 행위 | 기대 결과 |
+|---|---|---|---|---|
+| SDEL-01 | I | S 담당자=bob | alice가 본인 재확인 후 삭제 요청 | 대기 중 요청 1건(요청자 alice, 만료 7일 뒤). S는 그대로 |
+| SDEL-02 | I | SDEL-01 이후 | bob이 본인 재확인 후 승인 | S 삭제됨. 이후 모든 사용자에게 404 |
+| SDEL-03 | I | bob이 먼저 요청 | alice가 승인 | S 삭제됨 |
+| SDEL-04 | I | alice가 요청 | alice가 스스로 승인 | 409 `SELF_APPROVAL_NOT_ALLOWED` |
+| SDEL-05 | I | S2 담당자 없음 | alice가 삭제 요청 | 대기 없이 즉시 삭제 |
+| SDEL-06 | I | alice가 S3의 담당자를 겸함 | alice가 삭제 요청 | 대기 없이 즉시 삭제 |
+| SDEL-07 | A | – | dave, mallory, carol(인수자)이 요청·승인·거절 | 403 |
+| SDEL-08 | I | 대기 중 요청 | 상대방이 거절 (사유 선택) | 요청은 거절됨, S 유지 |
+| SDEL-09 | I | 대기 중 요청 | 요청자가 철회 | 요청은 철회됨, S 유지. 상대방이 철회하려 하면 403 |
+| SDEL-10 | I | 요청 후 7일 경과 | 상대방이 승인 | 409 `DELETION_REQUEST_NOT_PENDING`. 새 요청은 가능 |
+| SDEL-11 | I | 대기 중 요청 있음 | 다시 요청 | 409 `DELETION_REQUEST_EXISTS` |
+| SDEL-12 | I | 대기 중 요청 | 긴급 재지정 / OWNER 양도 | 요청이 무효가 됨. 이후 승인 409 `DELETION_REQUEST_NOT_PENDING` |
+| SDEL-13 | I | 대기 중 요청 | 인계 시작 | 요청이 무효가 됨 (S5) |
+| SDEL-14 | I | 인계 진행 중 | 삭제 요청 | 409 `HANDOVER_IN_PROGRESS` (S5) |
+| SDEL-15 | A | – | 재확인 없이·틀린 값으로 요청 / 승인 | 400 `REAUTH_FAILED`. 상태 변화 없음 |
+| SDEL-16 | I | bob 부재 | alice가 사유와 함께 담당자를 비우는 긴급 재지정 → 삭제 요청 | 즉시 삭제 |
+| SDEL-17 | A | 대기 중 요청 / 요청 없음 | alice·bob이 S의 삭제 요청 조회 | 200 `{requestedBy, requestedAt, expiresAt}` / 404 |
+| SDEL-18 | I | 동시에 두 요청 | – | 정확히 1건만 성공 (스페이스당 대기 중 요청 1건 유니크 제약) |
+
+### 3.5 보관과 영구 삭제 (PURGE)
+| ID | 레벨 | 전제 | 행위 | 기대 결과 |
+|---|---|---|---|---|
+| PURGE-01 | I | G 삭제 후 29일 | 정리 작업 실행 | 아무것도 지우지 않음 |
+| PURGE-02 | I | G 삭제 후 30일 | 정리 작업 실행 | 그룹, 스페이스, `group_member`, `group_member_history`, `assignment_change`, 초대, 삭제 요청 행이 물리 삭제됨 |
+| PURGE-03 | I | S만 삭제 후 30일, G는 유지 | 정리 작업 실행 | S와 S의 `assignment_change`, 삭제 요청이 물리 삭제됨. G와 다른 스페이스는 그대로 |
+| PURGE-04 | I | S1을 먼저 삭제, 이어서 G 삭제, 10일 뒤 | G의 `deleted_at`을 지워 복구 (운영자 작업 재현) | G와 S2는 다시 접근 가능. S1은 삭제 상태 그대로 |
+| PURGE-05 | I | dave 탈퇴, dave의 기록은 G에만 있음 | G 영구 삭제 | dave의 이름·이메일이 지워짐 |
+| PURGE-06 | I | dave 탈퇴, dave의 기록이 G와 H에 있음 | G만 영구 삭제 | dave의 이름·이메일 유지 |
+| PURGE-07 | I | 정리 작업 트랜잭션 설정 | 이력 테이블 DELETE | 허용 (GRP-14·SPC-18의 예외) |
+| PURGE-08 | I | alice가 OWNER인 G가 보관 중 (다른 활성 그룹 지위 없음) | alice 탈퇴 | 성공 (USER-05의 예외) |
 
 ## 4. 인계 프로세스 (HO)
 
@@ -164,7 +235,7 @@
 | HO-01 | I | bob의 파일이 모두 인수인계서에 첨부됨 | bob이 carol을 인수자로 인계 시작 | 서명 상태 `ASSIGNOR_TURN`. 서명자 3명(인계자 bob, 인수자 carol, 관리자 alice = 시작 시점의 OWNER). 스페이스가 즉시 읽기 전용이 되고, carol은 S 읽기 가능 |
 | HO-02 | I | 진행 중 인계 있음 | 인계 다시 시작 | 409 "현재 진행 중인 인수인계가 있습니다..." |
 | HO-03 | I | – | 인수자로 bob 자신을 지정 | 400 "본인 스스로에게 인계할 수 없습니다." |
-| HO-04 | A | mallory는 G 멤버가 아님 | mallory를 인수자로 지정 | 400 "그룹 멤버에게만 인계할 수 있습니다." `🔁 D-3 그룹 초대` |
+| HO-04 | A | mallory는 G 멤버가 아님 | mallory를 인수자로 지정 | 400 "그룹 멤버에게만 인계할 수 있습니다." |
 | HO-05 | I | bob의 파일 a.pdf가 첨부되지 않음 | 인계 시작 | 400, 메시지에 `a.pdf` 포함, 인계 프로세스 미생성 `🔁 D-4` |
 | HO-06 | I | 첨부되지 않은 파일이 **삭제됨** | 인계 시작 | 성공 (⚠️ as-is: 삭제된 파일도 누락으로 판정) |
 | HO-07 | I | carol이 과거에 S의 담당자였음 | 인계 시작 | 성공. 별도의 멤버십 행을 만들거나 재사용하지 않음 |
@@ -294,13 +365,13 @@
 | USER-02 | I | bob | 이름·업무용 전화번호 수정 | 지정한 필드만 변경. 업무용 전화번호는 비울 수 있음 |
 | USER-03 | I | bob 세션 2개 | 현재 비밀번호와 새 비밀번호로 변경 | 성공. 다른 세션은 401, 현재 세션은 유지. 새 비밀번호로 로그인 성공 (⚠️ as-is: 해시가 적용되지 않아 실패) |
 | USER-04 | A | bob | 틀린 현재 비밀번호로 변경 | 400. 실패 횟수에 포함 |
-| USER-05 | I | – | alice(OWNER) / bob(S 담당자) / carol(진행 중 인계의 인수자)이 탈퇴 | 각각 409. GRP-10·11과 같은 기준 |
+| USER-05 | I | – | alice(OWNER) / bob(S 담당자) / carol(진행 중 인계의 인수자)이 탈퇴 | 각각 409. GRP-10·11과 같은 기준. 삭제되어 보관 중인 그룹의 지위는 제외 (PURGE-08). carol은 S5 |
 | USER-06 | A | – | 사용자 목록·검색 | 제공하지 않음. OpenAPI에도 없음 (⚠️ as-is: SQL 오류) |
 | USER-07 | I | dave (탈퇴 조건 없음) | 본인 재확인 후 탈퇴 | 성공. 모든 세션 401. 그룹 멤버 행 삭제와 `group_member_history`에 탈퇴 기록. 이름·이메일은 DB에 남음 |
 | USER-08 | A | dave 탈퇴, 과거 기록 보유 | alice가 G의 멤버 이력 조회 | dave가 "탈퇴한 사용자"로 표시됨 |
 | USER-09 | I | dave 탈퇴 | 같은 이메일로 다시 가입·인증 | 성공. 새 id. 과거 이력은 이전 id에 그대로 |
 | USER-10 | A | – | 본인 재확인 값 없이 / 틀린 값으로 탈퇴 | 400 `REAUTH_FAILED`. 탈퇴되지 않음 |
-| USER-11 | A | bob이 업무용 전화번호 등록 | dave(같은 그룹)와 mallory(그룹 밖)가 bob 정보 조회 (S2 멤버 목록) | dave에게는 보이고, mallory는 조회 불가 |
+| USER-11 | A | bob이 업무용 전화번호 등록 | dave(같은 그룹)와 mallory(그룹 밖)가 bob 정보 조회 (S2 멤버 목록, GRP-16) | dave에게는 보이고, mallory는 조회 불가 |
 
 ## 9. 비기능 (NFR)
 
