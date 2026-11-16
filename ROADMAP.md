@@ -50,6 +50,7 @@
 | 메일 발송 비동기화와 SMTP 타임아웃 | S1 인증 메일, S2 초대 메일(`InvitationMailSender`) | 지금은 커밋 후 요청 스레드에서 바로 보내고 타임아웃이 없다. S1 수정 때 초대 메일 리스너도 함께 바꾼다 |
 | 초대 메일 발송 횟수 제한 | S2 초대 (정책 2.4) | 같은 이메일·같은 그룹에 반복 초대로 메일을 보낼 수 있다. 제한 기준은 정하지 않았다 |
 | 스페이스 목록의 진행 중 인계 조회를 SQL로 이동 | S5 인계 (`SpaceQueryServiceImpl`, NFR-04) | 지금은 스페이스마다 `HandoverStatus.ongoingHandoverId`를 부른다. 대역이라 비용이 없지만 실제 구현을 붙이면 N+1이 된다 (`DESIGN_REVIEW.md` 6.7) |
+| 저장소 정리 작업의 규모 대응 | S3 파일 (`StorageCleanupServiceImpl`, `StorageDeletionServiceImpl`) | 고아 객체 정리는 저장소 객체마다 DB를 두 번 조회하고, 삭제 대기열 재시도에는 횟수 상한과 알림이 없다. 객체가 많아지면 일괄 조회와 상한·알림을 붙인다 |
 
 ## 4. 현재 위치
 - 논의: **S4 인수인계서**

@@ -84,7 +84,8 @@ AI 에이전트가 이 저장소에서 작업할 때 따르는 안내다. 대화
   - DB FK 제약은 항상 둔다. JPA 연관관계는 애그리거트 내부에만 쓰고, 애그리거트 사이는 ID로 참조한다.
 - 트랜잭션
   - 서비스 클래스에 `@Transactional(readOnly = true)`를 기본으로 두고, 쓰기 메서드에만 `@Transactional`을 붙인다.
-  - S3 업로드, 임베딩 같은 외부 호출은 `@TransactionalEventListener(AFTER_COMMIT)`로 커밋 이후에 처리한다.
+  - 임베딩, 저장소 객체 삭제 같은 외부 호출은 `@TransactionalEventListener(AFTER_COMMIT)`로 커밋 이후에 처리한다.
+    - 예외: 파일 업로드는 저장소에 먼저 올린 뒤 짧은 트랜잭션에서 기록하고, 기록이 실패하면 올린 객체를 지운다. 저장소 전송 동안 DB 커넥션과 스페이스 잠금을 쥐지 않기 위해서다 (`DESIGN_REVIEW.md` 6.8). 이런 서비스는 클래스에 `@Transactional(propagation = NOT_SUPPORTED)`를 두고 이유를 적는다.
 - API 규약
   - 경로는 `/api/v1`과 리소스형 URL을 쓴다.
   - 오류는 `ProblemDetail`에 도메인 오류 코드를 붙인다.
