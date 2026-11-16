@@ -23,7 +23,8 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * OpenAPI 문서에 {@code ProblemDetail} 오류 스키마와 오류 코드 enum을 노출하고, 모든 엔드포인트에 공통 오류 응답을 붙인다.
- * 엔드포인트별 오류(404, 409 등)는 각 슬라이스의 컨트롤러에서 선언한다.
+ * 경로 변수로 대상을 가리키는 엔드포인트에는 404를 붙인다. 대상이 없을 때뿐 아니라 볼 수 없는 대상도 404로 답하기 때문이다 (정책 4.3 제5항).
+ * 그 밖의 엔드포인트별 오류(409 등)는 각 슬라이스의 컨트롤러에서 선언한다.
  */
 @Configuration(proxyBeanMethods = false)
 public class OpenApiConfig {
@@ -34,6 +35,8 @@ public class OpenApiConfig {
 
     private static final List<ErrorCode> COMMON_ERRORS =
             List.of(ErrorCode.INVALID_INPUT, ErrorCode.UNAUTHENTICATED, ErrorCode.ACCESS_DENIED, ErrorCode.INTERNAL_ERROR);
+
+    private static final List<ErrorCode> RESOURCE_ERRORS = List.of(ErrorCode.NOT_FOUND);
 
     @Bean
     public OpenAPI openAPI() {
@@ -53,16 +56,20 @@ public class OpenApiConfig {
             if (openApi.getPaths() == null) {
                 return;
             }
-            openApi.getPaths().values().forEach(pathItem ->
-                    pathItem.readOperations().forEach(OpenApiConfig::addCommonErrors));
+            openApi.getPaths().forEach((path, pathItem) -> pathItem.readOperations().forEach(operation -> {
+                addErrors(operation, COMMON_ERRORS);
+                if (path.contains("{")) {
+                    addErrors(operation, RESOURCE_ERRORS);
+                }
+            }));
         };
     }
 
-    private static void addCommonErrors(Operation operation) {
+    private static void addErrors(Operation operation, List<ErrorCode> errors) {
         if (operation.getResponses() == null) {
             operation.setResponses(new ApiResponses());
         }
-        for (ErrorCode errorCode : COMMON_ERRORS) {
+        for (ErrorCode errorCode : errors) {
             String status = String.valueOf(errorCode.getStatus().value());
             operation.getResponses().putIfAbsent(status, new ApiResponse()
                     .description(errorCode.getMessage())

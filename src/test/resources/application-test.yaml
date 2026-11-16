@@ -9,3 +9,6 @@ app:
     frontend-url: http://localhost:3000
     # 테스트 전용 고정 키 (비밀값 아님)
     totp-encryption-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+  group:
+    # 테스트에서는 영구 삭제 작업을 직접 호출한다
+    purge-cron: "-"

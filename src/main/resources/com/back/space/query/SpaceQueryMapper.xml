@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.back.space.query.SpaceQueryMapper">
+
+    <select id="countGroupSpaces" resultType="long">
+        SELECT count(*)
+        FROM space s
+        WHERE s.group_id = #{groupId}
+          AND s.deleted_at IS NULL
+    </select>
+
+    <select id="findGroupSpaces" resultType="com.back.space.query.SpaceQueryMapper$SpaceRow">
+        SELECT s.id,
+               s.name,
+               s.assignee_id,
+               u.name AS assignee_name,
+               EXISTS (SELECT 1
+                       FROM space_deletion_request r
+                       WHERE r.space_id = s.id
+                         AND r.status = 'PENDING'
+                         AND r.expires_at &gt; #{now}) AS deletion_pending
+        FROM space s
+                 LEFT JOIN users u ON u.id = s.assignee_id
+        WHERE s.group_id = #{groupId}
+          AND s.deleted_at IS NULL
+        ORDER BY s.id
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="findAssignmentChanges" resultType="com.back.space.query.SpaceQueryMapper$AssignmentChangeRow">
+        SELECT c.id,
+               c.type,
+               c.from_user_id,
+               CASE WHEN f.deleted_at IS NULL THEN f.name ELSE #{withdrawnName} END AS from_user_name,
+               c.to_user_id,
+               CASE WHEN t.deleted_at IS NULL THEN t.name ELSE #{withdrawnName} END AS to_user_name,
+               c.actor_id,
+               CASE WHEN a.deleted_at IS NULL THEN a.name ELSE #{withdrawnName} END AS actor_name,
+               c.reason,
+               c.occurred_at
+        FROM assignment_change c
+                 LEFT JOIN users f ON f.id = c.from_user_id
+                 LEFT JOIN users t ON t.id = c.to_user_id
+                 JOIN users a ON a.id = c.actor_id
+        WHERE c.space_id = #{spaceId}
+        ORDER BY c.occurred_at, c.id
+    </select>
+</mapper>

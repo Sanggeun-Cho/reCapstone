@@ -37,6 +37,23 @@ class OpenApiDocsApiTest extends ApiTest {
     }
 
     @Test
+    @DisplayName("S2: 경로 변수로 대상을 가리키는 엔드포인트에는 404가 선언되고, 그렇지 않은 엔드포인트에는 없다 (정책 4.3 제5항)")
+    void notFoundDeclaredOnResourcePaths() throws Exception {
+        String schemaRef = "content['application/problem+json'].schema.$ref";
+
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/groups/{groupId}'].get.responses['404']." + schemaRef)
+                        .value("#/components/schemas/ProblemDetail"))
+                .andExpect(jsonPath("$.paths['/api/v1/spaces/{spaceId}'].patch.responses['404']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/spaces/{spaceId}/deletion-request/approve'].post.responses['404']")
+                        .exists())
+                .andExpect(jsonPath("$.paths['/api/v1/invitations/{invitationId}/accept'].post.responses['404']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/groups'].post.responses['404']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/users/me/invitations'].get.responses['404']").doesNotExist());
+    }
+
+    @Test
     @DisplayName("S1: 회원·인증 엔드포인트가 노출되고, CSRF 토큰 인자는 요청 파라미터로 드러나지 않는다")
     void authEndpointsExposed() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
@@ -49,5 +66,22 @@ class OpenApiDocsApiTest extends ApiTest {
                 .andExpect(jsonPath("$.paths['/api/v1/auth/csrf'].get.parameters").doesNotExist())
                 .andExpect(jsonPath("$.components.schemas.ProblemDetail.properties.code.enum",
                         hasItems("ACCOUNT_LOCKED", "EMAIL_NOT_VERIFIED", "REAUTH_FAILED", "CSRF_INVALID")));
+    }
+
+    @Test
+    @DisplayName("S2: 그룹·초대·스페이스·삭제 요청 엔드포인트와 새 오류 코드가 노출된다")
+    void groupEndpointsExposed() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/groups'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/groups/{groupId}/owner-transfer'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/groups/{groupId}/invitations'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/invitations/{invitationId}/accept'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/users/me/invitations'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/spaces/{spaceId}/forced-reassignment'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/spaces/{spaceId}/deletion-request/approve'].post").exists())
+                .andExpect(jsonPath("$.components.schemas.ProblemDetail.properties.code.enum",
+                        hasItems("NOT_GROUP_MEMBER", "OWNER_MUST_TRANSFER", "HANDOVER_IN_PROGRESS",
+                                "INVITATION_NOT_PENDING", "SELF_APPROVAL_NOT_ALLOWED")));
     }
 }

@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.DynamicPropertyRegistrar;
 
 /**
- * 모든 통합 테스트가 공유하는 테스트 전용 빈: 움직이는 시계, 메일 수신 서버(GreenMail), 탈퇴 차단 스위치.
+ * 모든 통합 테스트가 공유하는 테스트 전용 빈: 움직이는 시계, 메일 수신 서버(GreenMail), 탈퇴 차단 스위치, 인계 상태 대역.
  * 같은 구성을 공유해야 애플리케이션 컨텍스트와 컨테이너를 한 번만 띄운다.
  */
 @TestConfiguration(proxyBeanMethods = false)
@@ -38,5 +38,12 @@ public class TestInfraConfiguration {
     @Bean
     ToggleableWithdrawalGuard toggleableWithdrawalGuard() {
         return new ToggleableWithdrawalGuard();
+    }
+
+    /** 인계 절차(S5) 대신 진행 중인 인계를 흉내 낸다. 기본 구현({@code NoHandoverStatus})보다 먼저 주입된다. */
+    @Bean
+    @Primary
+    FakeHandoverStatus fakeHandoverStatus() {
+        return new FakeHandoverStatus();
     }
 }

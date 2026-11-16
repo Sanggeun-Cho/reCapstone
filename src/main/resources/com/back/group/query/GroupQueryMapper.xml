@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.back.group.query.GroupQueryMapper">
+
+    <select id="findMyGroups" resultType="com.back.group.query.GroupQueryMapper$GroupRow">
+        SELECT g.id, g.name, g.owner_id = #{userId} AS owner
+        FROM groups g
+                 JOIN group_member m ON m.group_id = g.id AND m.user_id = #{userId}
+        WHERE g.deleted_at IS NULL
+        <if test="cursor != null">
+            AND g.id &lt; #{cursor}
+        </if>
+        ORDER BY g.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findDetail" resultType="com.back.group.query.GroupQueryMapper$DetailRow">
+        SELECT g.id, g.name, g.owner_id, o.name AS owner_name,
+               (SELECT count(*) FROM group_member m WHERE m.group_id = g.id) AS member_count
+        FROM groups g
+                 JOIN users o ON o.id = g.owner_id
+        WHERE g.id = #{groupId}
+          AND g.deleted_at IS NULL
+    </select>
+
+    <select id="findMembers" resultType="com.back.group.query.GroupQueryMapper$MemberRow">
+        SELECT u.id AS user_id, u.name, u.email, u.work_phone, u.id = g.owner_id AS owner, m.joined_at
+        FROM group_member m
+                 JOIN groups g ON g.id = m.group_id
+                 JOIN users u ON u.id = m.user_id
+        WHERE m.group_id = #{groupId}
+        ORDER BY m.joined_at, u.id
+    </select>
+
+    <select id="findHistory" resultType="com.back.group.query.GroupQueryMapper$HistoryRow">
+        SELECT h.user_id,
+               CASE WHEN u.deleted_at IS NULL THEN u.name ELSE #{withdrawnName} END AS user_name,
+               h.type,
+               h.actor_id,
+               CASE WHEN a.deleted_at IS NULL THEN a.name ELSE #{withdrawnName} END AS actor_name,
+               h.occurred_at
+        FROM group_member_history h
+                 JOIN users u ON u.id = h.user_id
+                 JOIN users a ON a.id = h.actor_id
+        WHERE h.group_id = #{groupId}
+        ORDER BY h.occurred_at, h.id
+    </select>
+
+    <select id="findPendingInvitations" resultType="com.back.group.query.GroupQueryMapper$InvitationRow">
+        SELECT i.id, i.email, i.expires_at
+        FROM invitation i
+        WHERE i.group_id = #{groupId}
+          AND i.status = 'PENDING'
+          AND i.expires_at &gt; #{now}
+          AND i.deleted_at IS NULL
+        ORDER BY i.id
+    </select>
+
+    <select id="findReceivedInvitations" resultType="com.back.group.query.GroupQueryMapper$ReceivedInvitationRow">
+        SELECT i.id, g.id AS group_id, g.name AS group_name, u.name AS inviter_name, i.expires_at
+        FROM invitation i
+                 JOIN groups g ON g.id = i.group_id
+                 JOIN users u ON u.id = i.inviter_id
+        WHERE i.email = #{email}
+          AND i.status = 'PENDING'
+          AND i.expires_at &gt; #{now}
+          AND i.deleted_at IS NULL
+          AND g.deleted_at IS NULL
+        ORDER BY i.id
+    </select>
+</mapper>
