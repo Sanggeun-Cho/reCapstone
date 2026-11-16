@@ -22,6 +22,7 @@ extra["springAiVersion"] = "2.0.1"
 extra["mybatisVersion"] = "4.1.0"
 extra["springdocVersion"] = "3.2.0"
 extra["greenmailVersion"] = "2.1.3"
+extra["datasourceProxyVersion"] = "1.11.1"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -47,6 +48,7 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testImplementation("org.testcontainers:testcontainers-postgresql")
     testImplementation("com.icegreen:greenmail:${property("greenmailVersion")}")
+    testImplementation("net.ttddyy:datasource-proxy:${property("datasourceProxyVersion")}")
     testCompileOnly("org.projectlombok:lombok")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testAnnotationProcessor("org.projectlombok:lombok")
