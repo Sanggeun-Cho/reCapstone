@@ -1,5 +1,6 @@
 package com.back.support;
 
+import com.back.file.storage.S3FileStorage;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetupTest;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -53,6 +54,13 @@ public class TestInfraConfiguration {
     @Bean
     ToggleableWithdrawalGuard toggleableWithdrawalGuard() {
         return new ToggleableWithdrawalGuard();
+    }
+
+    /** 실제 저장소(RustFS)에 넘기면서 장애를 넣을 수 있는 대역. 서비스에는 이 빈이 주입된다. */
+    @Bean
+    @Primary
+    FaultInjectingFileStorage faultInjectingFileStorage(S3FileStorage fileStorage) {
+        return new FaultInjectingFileStorage(fileStorage);
     }
 
     /** 인계 절차(S5) 대신 진행 중인 인계를 흉내 낸다. 기본 구현({@code NoHandoverStatus})보다 먼저 주입된다. */

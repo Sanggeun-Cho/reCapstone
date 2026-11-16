@@ -77,6 +77,9 @@ public abstract class AuthApiTest extends ApiTest {
     protected FakeHandoverStatus handoverStatus;
 
     @Autowired
+    protected FaultInjectingFileStorage fileStorage;
+
+    @Autowired
     private FilterChainProxy springSecurityFilterChain;
 
     @AfterEach
@@ -84,9 +87,10 @@ public abstract class AuthApiTest extends ApiTest {
         // 추가 전용 이력 테이블도 CASCADE로 비우므로 영구 삭제와 같은 표시(app.purge)를 켠 트랜잭션에서 지운다
         transactionTemplate.executeWithoutResult(status -> {
             jdbcTemplate.queryForObject("SELECT set_config('app.purge', 'on', true)", String.class);
-            jdbcTemplate.execute("TRUNCATE recovery_code, users RESTART IDENTITY CASCADE");
+            jdbcTemplate.execute("TRUNCATE recovery_code, storage_deletion, users RESTART IDENTITY CASCADE");
         });
         handoverStatus.reset();
+        fileStorage.reset();
         redis.execute(connection -> {
             connection.serverCommands().flushDb();
             return null;
