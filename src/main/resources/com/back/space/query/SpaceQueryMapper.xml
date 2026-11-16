@@ -31,11 +31,11 @@
         SELECT c.id,
                c.type,
                c.from_user_id,
-               CASE WHEN f.deleted_at IS NULL THEN f.name ELSE #{withdrawnName} END AS from_user_name,
+               f.name AS from_user_name, coalesce(f.deleted_at IS NOT NULL, FALSE) AS from_user_withdrawn,
                c.to_user_id,
-               CASE WHEN t.deleted_at IS NULL THEN t.name ELSE #{withdrawnName} END AS to_user_name,
+               t.name AS to_user_name, coalesce(t.deleted_at IS NOT NULL, FALSE) AS to_user_withdrawn,
                c.actor_id,
-               CASE WHEN a.deleted_at IS NULL THEN a.name ELSE #{withdrawnName} END AS actor_name,
+               a.name AS actor_name, a.deleted_at IS NOT NULL AS actor_withdrawn,
                c.reason,
                c.occurred_at
         FROM assignment_change c

@@ -18,13 +18,14 @@ public interface SpaceQueryMapper {
     List<SpaceRow> findGroupSpaces(@Param("groupId") long groupId, @Param("offset") long offset,
             @Param("limit") int limit, @Param("now") Instant now);
 
-    List<AssignmentChangeRow> findAssignmentChanges(@Param("spaceId") long spaceId,
-            @Param("withdrawnName") String withdrawnName);
+    /** 담당자 변경 이력. 탈퇴한 사용자는 이름과 탈퇴 여부를 함께 돌려준다 (정책 7.8 제3항). */
+    List<AssignmentChangeRow> findAssignmentChanges(@Param("spaceId") long spaceId);
 
     record SpaceRow(long id, String name, Long assigneeId, String assigneeName, boolean deletionPending) {
     }
 
     record AssignmentChangeRow(long id, AssignmentChange.Type type, Long fromUserId, String fromUserName,
-            Long toUserId, String toUserName, long actorId, String actorName, String reason, Instant occurredAt) {
+            boolean fromUserWithdrawn, Long toUserId, String toUserName, boolean toUserWithdrawn, long actorId,
+            String actorName, boolean actorWithdrawn, String reason, Instant occurredAt) {
     }
 }

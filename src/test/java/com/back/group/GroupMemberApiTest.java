@@ -117,7 +117,7 @@ class GroupMemberApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("GRP-17·USER-08: 멤버 이력은 OWNER만 시간순으로 보고, 탈퇴한 사용자는 \"탈퇴한 사용자\"로 표시된다")
+    @DisplayName("GRP-17·USER-08: 멤버 이력은 OWNER만 시간순으로 보고, 탈퇴한 사용자는 이름과 withdrawn=true가 함께 내려온다")
     void history() throws Exception {
         delete("/api/v1/groups/" + g + "/members/" + dave, ALICE).andExpect(status().isNoContent());
         clock.advance(Duration.ofSeconds(1));
@@ -131,9 +131,11 @@ class GroupMemberApiTest extends GroupTestSupport {
                 .andExpect(jsonPath("$[?(@.user.id == " + dave + ")].type",
                         contains("JOINED", "REMOVED", "JOINED", "LEFT")))
                 .andExpect(jsonPath("$[?(@.user.id == " + dave + ")].user.name",
-                        contains(GroupDto.WITHDRAWN_USER_NAME, GroupDto.WITHDRAWN_USER_NAME,
-                                GroupDto.WITHDRAWN_USER_NAME, GroupDto.WITHDRAWN_USER_NAME)))
+                        contains("데이브", "데이브", "데이브", "데이브")))
+                .andExpect(jsonPath("$[?(@.user.id == " + dave + ")].user.withdrawn",
+                        contains(true, true, true, true)))
                 .andExpect(jsonPath("$[?(@.type == 'REMOVED')].actor.name", contains("앨리스")))
+                .andExpect(jsonPath("$[?(@.type == 'REMOVED')].actor.withdrawn", contains(false)))
                 .andExpect(jsonPath("$[0].user.id").value(alice));
         get("/api/v1/groups/" + g + "/member-history", CAROL).andExpect(status().isForbidden());
     }

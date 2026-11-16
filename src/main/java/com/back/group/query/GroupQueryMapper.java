@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Param;
 
 /**
  * 그룹 화면 조회 (MyBatis, SELECT 전용). SQL은 같은 이름의 XML에 있다.
- * 탈퇴한 사용자의 이름은 {@code withdrawnName}으로 바꿔 돌려준다.
+ * 기록에 남은 탈퇴한 사용자는 이름과 탈퇴 여부를 함께 돌려준다 (정책 7.8 제3항).
  */
 @Mapper
 public interface GroupQueryMapper {
@@ -22,7 +22,7 @@ public interface GroupQueryMapper {
 
     List<MemberRow> findMembers(@Param("groupId") long groupId);
 
-    List<HistoryRow> findHistory(@Param("groupId") long groupId, @Param("withdrawnName") String withdrawnName);
+    List<HistoryRow> findHistory(@Param("groupId") long groupId);
 
     List<InvitationRow> findPendingInvitations(@Param("groupId") long groupId, @Param("now") Instant now);
 
@@ -37,8 +37,8 @@ public interface GroupQueryMapper {
     record MemberRow(long userId, String name, String email, String workPhone, boolean owner, Instant joinedAt) {
     }
 
-    record HistoryRow(long userId, String userName, GroupMemberHistory.Type type, long actorId, String actorName,
-            Instant occurredAt) {
+    record HistoryRow(long userId, String userName, boolean userWithdrawn, GroupMemberHistory.Type type,
+            long actorId, String actorName, boolean actorWithdrawn, Instant occurredAt) {
     }
 
     record InvitationRow(long id, String email, Instant expiresAt) {
