@@ -20,6 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired;
  * 목록 대상을 {@value #SMALL}건 추가한 뒤 한 번, {@value #LARGE}건이 되도록 더 추가한 뒤 한 번 조회해 실행된 SQL 수를 비교한다.
  * 응답 건수도 함께 늘었는지 확인해, 아무것도 조회하지 않아 통과하는 일을 막는다.
  * 세션 목록(NFR-04h)은 DB가 아니라 Redis(Spring Session)에서 읽으므로 이 측정 대상이 아니다.
+ * <p>
+ * 한계: 한 트랜잭션 안에서 같은 MyBatis 조회를 같은 인자로 반복하면 1차 캐시가 답해 SQL이 나가지 않으므로 세지 않는다.
+ * DB 왕복이 없으니 N+1로 보지 않는다. 행마다 인자가 달라지는 조회(전형적인 N+1)는 잡힌다.
  */
 class ListQueryCountApiTest extends GroupTestSupport {
 
@@ -110,7 +113,7 @@ class ListQueryCountApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("NFR-04i: 카운터가 DB 연결에 붙어 SQL을 세고, reset()하면 0이 된다")
+    @DisplayName("NFR-04i: 카운터가 DB 연결에 붙어 SQL을 세고, reset()하면 0이 되며, 다른 스레드의 SQL은 세지 않는다")
     void counterCountsSql() throws Exception {
         session(ALICE);
         queryCounter.reset();
@@ -119,6 +122,13 @@ class ListQueryCountApiTest extends GroupTestSupport {
 
         queryCounter.reset();
         assertThat(queryCounter.count()).isZero();
+
+        Thread other = new Thread(() -> count("SELECT count(*) FROM users"));
+        other.start();
+        other.join();
+        assertThat(queryCounter.count()).isZero();
+        count("SELECT count(*) FROM users");
+        assertThat(queryCounter.count()).isOne();
     }
 
     // --- 측정 ---
