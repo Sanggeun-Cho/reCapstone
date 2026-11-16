@@ -5,7 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.back.group.api.InvitationDto;
 import com.back.space.api.SpaceDto;
-import com.back.support.GroupTestSupport;
+import com.back.support.FileTestSupport;
 import com.back.support.QueryCounter;
 import com.jayway.jsonpath.JsonPath;
 import java.time.Duration;
@@ -24,7 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * 한계: 한 트랜잭션 안에서 같은 MyBatis 조회를 같은 인자로 반복하면 1차 캐시가 답해 SQL이 나가지 않으므로 세지 않는다.
  * DB 왕복이 없으니 N+1로 보지 않는다. 행마다 인자가 달라지는 조회(전형적인 N+1)는 잡힌다.
  */
-class ListQueryCountApiTest extends GroupTestSupport {
+class ListQueryCountApiTest extends FileTestSupport {
 
     private static final int SMALL = 2;
     private static final int LARGE = 12;
@@ -110,6 +110,28 @@ class ListQueryCountApiTest extends GroupTestSupport {
                     as(alice, () -> spaceService.forceReassign(alice, s,
                             new SpaceDto.ForcedReassignmentReq(to, "사유")));
                 }));
+    }
+
+    @Test
+    @DisplayName("NFR-04j: 스페이스 폴더 내용 (업로더 이름·탈퇴 여부 포함)")
+    void spaceItems() throws Exception {
+        assertConstantQueries("/api/v1/spaces/" + s + "/items", BOB, "$",
+                count -> repeat(count, i -> {
+                    if (i % 2 == 0) {
+                        folder(null, "F" + sequence++);
+                    } else {
+                        uploadOne(null, "f" + sequence++ + ".txt", "x");
+                    }
+                }));
+    }
+
+    @Test
+    @DisplayName("NFR-04k: 휴지통 (원래 경로 포함)")
+    void trashItems() throws Exception {
+        long parent = folder(null, "P");
+        assertConstantQueries("/api/v1/spaces/" + s + "/trash", BOB, "$",
+                count -> repeat(count, i -> trash(uploadOne(i % 2 == 0 ? parent : null, "t" + sequence++ + ".txt",
+                        "x"))));
     }
 
     @Test

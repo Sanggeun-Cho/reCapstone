@@ -12,3 +12,10 @@ app:
   group:
     # 테스트에서는 영구 삭제 작업을 직접 호출한다
     purge-cron: "-"
+  storage:
+    # 테스트에서는 정리 작업을 직접 호출한다. 저장소 주소와 키는 TestcontainersConfiguration이 넣는다
+    cleanup-cron: "-"
+    bucket: recapstone-test
+    path-style: true
+    auto-create-bucket: true
+    cors-origins: http://localhost:3000

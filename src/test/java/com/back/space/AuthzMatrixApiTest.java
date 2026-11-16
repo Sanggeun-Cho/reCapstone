@@ -128,7 +128,9 @@ class AuthzMatrixApiTest extends GroupTestSupport {
         Map<String, Map<String, Object>> paths = JsonPath.read(docs, "$.paths");
 
         assertThat(paths.get("/api/v1/groups/{groupId}/members")).doesNotContainKeys("post", "put");
-        assertThat(paths.keySet()).noneMatch(path -> path.contains("restore") || path.contains("role")
+        // 휴지통 항목 복구(정책 8.5)는 담당자 기능이라 예외다. 그룹·스페이스 복구는 운영자 기능(S8)으로 남긴다
+        assertThat(paths.keySet()).noneMatch(path -> (path.contains("restore") && !path.contains("/trash/"))
+                || path.contains("role")
                 || path.contains("permission") || path.contains("rbac"));
         assertThat(paths.keySet()).doesNotContain("/api/v1/users/{userId}");
         assertThat(Set.copyOf(paths.keySet())).contains("/api/v1/groups/{groupId}/invitations");

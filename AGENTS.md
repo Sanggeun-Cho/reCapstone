@@ -76,14 +76,16 @@ AI 에이전트가 이 저장소에서 작업할 때 따르는 안내다. 대화
   - 입력 검증은 Bean Validation으로 한다.
   - 서버가 채우는 값(요청자 id 등)은 DTO에 넣지 않고 메서드 인자로 받는다.
 - 엔티티
-  - 모든 엔티티는 `deleted_at`(soft delete)과 감사 필드를 가진다. 예외는 다음 두 가지다.
+  - 모든 엔티티는 `deleted_at`(soft delete)과 감사 필드를 가진다. 예외는 다음 세 가지다.
     - `group_member`: 현재 멤버만 두고 행을 실제로 지우며, 기록은 `group_member_history`에 남긴다.
     - 추가 전용 이력 테이블(`group_member_history`, `assignment_change`): 감사 필드와 `deleted_at`을 두지 않는다. 행을 바꿀 수 없으므로 수정자·수정 시각·삭제 시각이 생길 수 없고, 누가 언제 남겼는지는 이력 자체의 `actor_id`·`occurred_at`이 담는다. 지우는 것은 영구 삭제 작업뿐이다 (`DESIGN_REVIEW.md` 6.5 구현 메모).
+    - 작업 대기열(`storage_deletion`): 처리가 끝난 행을 실제로 지운다. 감사 필드와 `deleted_at`을 두지 않고 `created_at`, 시도 횟수, 마지막 오류만 둔다.
   - 이력 테이블은 추가 전용이다. DB 트리거로 UPDATE와 DELETE를 거부한다.
   - DB FK 제약은 항상 둔다. JPA 연관관계는 애그리거트 내부에만 쓰고, 애그리거트 사이는 ID로 참조한다.
 - 트랜잭션
   - 서비스 클래스에 `@Transactional(readOnly = true)`를 기본으로 두고, 쓰기 메서드에만 `@Transactional`을 붙인다.
-  - S3 업로드, 임베딩 같은 외부 호출은 `@TransactionalEventListener(AFTER_COMMIT)`로 커밋 이후에 처리한다.
+  - 임베딩, 저장소 객체 삭제 같은 외부 호출은 `@TransactionalEventListener(AFTER_COMMIT)`로 커밋 이후에 처리한다.
+    - 예외: 파일 업로드는 저장소에 먼저 올린 뒤 짧은 트랜잭션에서 기록하고, 기록이 실패하면 올린 객체를 지운다. 저장소 전송 동안 DB 커넥션과 스페이스 잠금을 쥐지 않기 위해서다 (`DESIGN_REVIEW.md` 6.8). 이런 서비스는 클래스에 `@Transactional(propagation = NOT_SUPPORTED)`를 두고 이유를 적는다.
 - API 규약
   - 경로는 `/api/v1`과 리소스형 URL을 쓴다.
   - 오류는 `ProblemDetail`에 도메인 오류 코드를 붙인다.

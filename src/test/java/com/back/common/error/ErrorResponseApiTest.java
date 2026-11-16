@@ -36,6 +36,15 @@ class ErrorResponseApiTest extends ApiTest {
     }
 
     @Test
+    @DisplayName("NFR-01: 서블릿이 multipart 크기 초과로 거부하면 413 FILE_TOO_LARGE ProblemDetail")
+    void uploadTooLarge() throws Exception {
+        mockMvc.perform(get(PROBE + "/upload-too-large").with(user("alice")))
+                .andExpect(status().isContentTooLarge())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("FILE_TOO_LARGE"));
+    }
+
+    @Test
     @DisplayName("권한이 없으면 403 ProblemDetail")
     void accessDenied() throws Exception {
         mockMvc.perform(get(PROBE + "/denied").with(user("alice")))

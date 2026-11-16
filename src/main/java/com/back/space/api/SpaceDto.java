@@ -39,8 +39,8 @@ public final class SpaceDto {
     public record ForcedReassignmentReq(Long userId, @NotBlank @Size(max = REASON_MAX) String reason) {
     }
 
-    public record AssignmentChangeRes(long id, AssignmentChange.Type type, GroupDto.UserRef from,
-            GroupDto.UserRef to, GroupDto.UserRef actor, String reason, Instant occurredAt) {
+    public record AssignmentChangeRes(long id, AssignmentChange.Type type, GroupDto.RecordedUserRef from,
+            GroupDto.RecordedUserRef to, GroupDto.RecordedUserRef actor, String reason, Instant occurredAt) {
     }
 
     // --- 삭제 요청 (정책 3.4) ---

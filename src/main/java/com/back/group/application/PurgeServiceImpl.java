@@ -1,5 +1,6 @@
 package com.back.group.application;
 
+import com.back.file.application.StorageDeletionService;
 import com.back.group.GroupProperties;
 import com.back.group.api.GroupDto;
 import jakarta.persistence.EntityManager;
@@ -24,6 +25,7 @@ public class PurgeServiceImpl implements PurgeService {
     private final EntityManager em;
     private final GroupProperties properties;
     private final Clock clock;
+    private final StorageDeletionService storageDeletionService;
 
     @Override
     @Transactional
@@ -39,6 +41,9 @@ public class PurgeServiceImpl implements PurgeService {
                 """, cutoff);
 
         if (!spaceIds.isEmpty()) {
+            // 파일 객체는 스페이스 키 접두어로 삭제 대기열에 넣고 커밋 후에 지운다 (DESIGN_REVIEW.md 6.8)
+            delete("DELETE FROM drive_item WHERE space_id IN (:ids)", spaceIds);
+            storageDeletionService.enqueueSpaces(spaceIds);
             delete("DELETE FROM space_deletion_request WHERE space_id IN (:ids)", spaceIds);
             delete("DELETE FROM assignment_change WHERE space_id IN (:ids)", spaceIds);
             delete("DELETE FROM space WHERE id IN (:ids)", spaceIds);
@@ -58,7 +63,7 @@ public class PurgeServiceImpl implements PurgeService {
 
     /**
      * 기록이 남은 그룹이 모두 영구 삭제된 탈퇴자의 이름과 이메일을 지운다 (정책 7.9).
-     * 기록은 멤버 이력, 담당자 변경 이력, 그룹 생성·OWNER 지위다.
+     * 기록은 멤버 이력, 담당자 변경 이력, 그룹 생성·OWNER 지위, 올린 파일·휴지통으로 옮긴 기록이다.
      */
     private int anonymizeWithdrawnUsers() {
         return em.createNativeQuery("""
@@ -70,6 +75,7 @@ public class PurgeServiceImpl implements PurgeService {
                           AND NOT EXISTS (SELECT 1 FROM assignment_change c
                                           WHERE u.id IN (c.from_user_id, c.to_user_id, c.actor_id))
                           AND NOT EXISTS (SELECT 1 FROM groups g WHERE u.id IN (g.owner_id, g.created_by))
+                          AND NOT EXISTS (SELECT 1 FROM drive_item i WHERE u.id IN (i.uploader_id, i.trashed_by))
                         """)
                 .setParameter("name", GroupDto.WITHDRAWN_USER_NAME)
                 .executeUpdate();

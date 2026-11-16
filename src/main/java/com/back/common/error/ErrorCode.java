@@ -51,7 +51,18 @@ public enum ErrorCode {
     INVITATION_NOT_PENDING(HttpStatus.CONFLICT, "대기 중인 초대가 아닙니다."),
     DELETION_REQUEST_EXISTS(HttpStatus.CONFLICT, "대기 중인 삭제 요청이 이미 있습니다."),
     DELETION_REQUEST_NOT_PENDING(HttpStatus.CONFLICT, "대기 중인 삭제 요청이 없습니다."),
-    SELF_APPROVAL_NOT_ALLOWED(HttpStatus.CONFLICT, "요청한 사람은 스스로 승인하거나 거절할 수 없습니다.");
+    SELF_APPROVAL_NOT_ALLOWED(HttpStatus.CONFLICT, "요청한 사람은 스스로 승인하거나 거절할 수 없습니다."),
+
+    // 파일·폴더 (정책 제8장)
+    FILE_TOO_LARGE(HttpStatus.CONTENT_TOO_LARGE, "파일은 1개당 200MB, 한 번에 모두 합해 500MB까지 올릴 수 있습니다."),
+    TOO_MANY_FILES(HttpStatus.BAD_REQUEST, "한 번에 20개까지 올릴 수 있습니다."),
+    NAME_CONFLICT(HttpStatus.CONFLICT, "같은 폴더에 같은 이름이 있습니다."),
+    INVALID_ITEM_NAME(HttpStatus.BAD_REQUEST, "쓸 수 없는 이름입니다."),
+    FOLDER_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST, "폴더는 10단계까지 만들 수 있습니다."),
+    INVALID_MOVE_TARGET(HttpStatus.BAD_REQUEST, "그 위치로 옮길 수 없습니다."),
+    INLINE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "바로 열 수 없는 파일입니다. 내려받아서 보세요."),
+    STORAGE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "파일 저장소를 쓸 수 없습니다. 잠시 뒤 다시 시도하세요."),
+    TRASH_NOT_EMPTY(HttpStatus.CONFLICT, "휴지통을 비워야 인계를 시작할 수 있습니다.");
 
     private final HttpStatus status;
     private final String message;

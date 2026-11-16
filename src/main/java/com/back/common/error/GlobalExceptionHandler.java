@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -67,6 +68,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         body.setProperty(CODE, ErrorCode.INVALID_INPUT.name());
         body.setProperty(ERRORS, errors);
         return handleExceptionInternal(ex, body, headers, status, request);
+    }
+
+    /** multipart 크기 초과(파일 200MB, 요청 500MB)는 서블릿 단계에서 걸린다 (정책 8.2 제1항). */
+    @Override
+    protected @Nullable ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        ProblemDetail body = ProblemDetail.forStatusAndDetail(ErrorCode.FILE_TOO_LARGE.getStatus(),
+                ErrorCode.FILE_TOO_LARGE.getMessage());
+        body.setProperty(CODE, ErrorCode.FILE_TOO_LARGE.name());
+        return handleExceptionInternal(ex, body, headers, ErrorCode.FILE_TOO_LARGE.getStatus(), request);
     }
 
     // 프레임워크 예외(404, 405 등)의 응답에도 공통 오류 코드를 붙인다.

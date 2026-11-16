@@ -34,10 +34,10 @@
 
     <select id="findHistory" resultType="com.back.group.query.GroupQueryMapper$HistoryRow">
         SELECT h.user_id,
-               CASE WHEN u.deleted_at IS NULL THEN u.name ELSE #{withdrawnName} END AS user_name,
+               u.name AS user_name, u.deleted_at IS NOT NULL AS user_withdrawn,
                h.type,
                h.actor_id,
-               CASE WHEN a.deleted_at IS NULL THEN a.name ELSE #{withdrawnName} END AS actor_name,
+               a.name AS actor_name, a.deleted_at IS NOT NULL AS actor_withdrawn,
                h.occurred_at
         FROM group_member_history h
                  JOIN users u ON u.id = h.user_id

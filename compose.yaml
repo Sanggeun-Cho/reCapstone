@@ -20,3 +20,11 @@ services:
     ports:
       - "127.0.0.1:1025:1025"
       - "127.0.0.1:8025:8025"
+  # 파일 저장소 (S3 호환, DESIGN_REVIEW.md 6.8). 버킷과 CORS는 앱이 시작할 때 만든다 (local 프로필)
+  rustfs:
+    image: rustfs/rustfs:1.0.6
+    environment:
+      RUSTFS_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${STORAGE_SECRET_KEY}
+    ports:
+      - "127.0.0.1:9000:9000"

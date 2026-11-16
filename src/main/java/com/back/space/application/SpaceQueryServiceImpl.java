@@ -42,14 +42,15 @@ public class SpaceQueryServiceImpl implements SpaceQueryService {
     @Override
     public List<SpaceDto.AssignmentChangeRes> assignmentChanges(long userId, long spaceId) {
         accessPolicy.checkAndGet(userId, spaceId, Action.VIEW_HISTORY);
-        return mapper.findAssignmentChanges(spaceId, GroupDto.WITHDRAWN_USER_NAME).stream()
+        return mapper.findAssignmentChanges(spaceId).stream()
                 .map(row -> new SpaceDto.AssignmentChangeRes(row.id(), row.type(),
-                        ref(row.fromUserId(), row.fromUserName()), ref(row.toUserId(), row.toUserName()),
-                        new GroupDto.UserRef(row.actorId(), row.actorName()), row.reason(), row.occurredAt()))
+                        ref(row.fromUserId(), row.fromUserName(), row.fromUserWithdrawn()),
+                        ref(row.toUserId(), row.toUserName(), row.toUserWithdrawn()),
+                        ref(row.actorId(), row.actorName(), row.actorWithdrawn()), row.reason(), row.occurredAt()))
                 .toList();
     }
 
-    private static GroupDto.UserRef ref(Long id, String name) {
-        return id == null ? null : new GroupDto.UserRef(id, name);
+    private static GroupDto.RecordedUserRef ref(Long id, String name, boolean withdrawn) {
+        return id == null ? null : new GroupDto.RecordedUserRef(id, name, withdrawn);
     }
 }

@@ -18,6 +18,13 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
     @Query("select s from Space s where s.id = :id")
     Optional<Space> findForUpdate(long id);
 
+    /**
+     * 스페이스 행만 잠근다. 삭제되어 보관 중인 스페이스도 잠근다. 휴지통 정리 작업처럼 사용자 권한 없이 스페이스의 파일을 바꾸는
+     * 작업이 쓰며, 그룹 행은 잠그지 않으므로 그룹 → 스페이스 순서와 엇갈려 교착하지 않는다.
+     */
+    @Query(value = "SELECT id FROM space WHERE id = :id FOR UPDATE", nativeQuery = true)
+    Optional<Long> lockRow(long id);
+
     /** 삭제되지 않은 그룹의 삭제되지 않은 스페이스 중 그 사용자가 담당하는 곳이 그룹에 있는지. */
     @Query("""
             select count(s) > 0 from Space s, com.back.group.domain.Group g

@@ -40,3 +40,49 @@ jobs:
           name: test-report
           path: build/reports/tests/test
           retention-days: 7
+
+  # 저장소 적합성: 저장소 코드가 AWS 에뮬레이터에서도 같은 의미로 동작하는지 본다 (DESIGN_REVIEW.md 6.8).
+  # 필수 검사가 아니다. 갓 나온 도구의 변화가 머지를 막지 않게 한다.
+  s3-conformance:
+    name: s3-conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install AWS Emulator
+        run: |
+          curl -fsSLo aws-emulator.deb https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/latest/aws-emulator_amd64.deb
+          sudo apt-get install -y ./aws-emulator.deb
+          aws-emulator -v
+
+      # 키와 인증서는 실행마다 새로 만들어지며 러너 밖으로 나가지 않는다. 텔레메트리는 끈다
+      - name: Start AWS Emulator
+        run: |
+          aws-emulator --telemetry off --idle-timeout 1200 > emulator.log 2>&1 &
+          for i in $(seq 60); do
+            [ -f ~/.aws/emulator/9297/ca.pem ] && curl -sf --cacert ~/.aws/emulator/9297/ca.pem https://127.0.0.1:9297/__admin/health && break
+            sleep 1
+          done
+
+      - name: Conformance test
+        env:
+          EMULATOR_HOME: /home/runner/.aws/emulator/9297
+          EMULATOR_ENDPOINT: https://127.0.0.1:9297
+        run: ./gradlew conformanceTest --no-daemon
+
+      - name: Upload conformance report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-report
+          path: build/reports/tests/conformanceTest
+          retention-days: 7

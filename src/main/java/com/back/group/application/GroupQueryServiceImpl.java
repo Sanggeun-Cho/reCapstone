@@ -48,9 +48,11 @@ public class GroupQueryServiceImpl implements GroupQueryService {
     @Override
     public List<GroupDto.HistoryRes> history(long userId, long groupId) {
         accessPolicy.checkAndGet(userId, groupId, Action.MANAGE);
-        return mapper.findHistory(groupId, GroupDto.WITHDRAWN_USER_NAME).stream()
-                .map(row -> new GroupDto.HistoryRes(new GroupDto.UserRef(row.userId(), row.userName()), row.type(),
-                        new GroupDto.UserRef(row.actorId(), row.actorName()), row.occurredAt()))
+        return mapper.findHistory(groupId).stream()
+                .map(row -> new GroupDto.HistoryRes(
+                        new GroupDto.RecordedUserRef(row.userId(), row.userName(), row.userWithdrawn()), row.type(),
+                        new GroupDto.RecordedUserRef(row.actorId(), row.actorName(), row.actorWithdrawn()),
+                        row.occurredAt()))
                 .toList();
     }
 }

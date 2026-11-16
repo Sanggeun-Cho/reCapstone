@@ -112,6 +112,48 @@ erDiagram
 - `group_member_history`, `assignment_change`는 추가 전용이다. 트리거 `reject_append_only_modification()`이 UPDATE·DELETE·TRUNCATE를 거부하고, 영구 삭제 트랜잭션(`app.purge = 'on'`)에서만 DELETE·TRUNCATE를 허용한다.
   - 이 두 테이블은 감사 필드와 `deleted_at`이 없다(코드 규약의 예외). 행을 바꿀 수 없으니 수정·삭제 정보가 생길 수 없고, 생성 정보는 `actor_id`·`occurred_at`이 담는다 (`DESIGN_REVIEW.md` 6.5).
 - 보관 중인 스페이스에서 담당하던 멤버가 그룹을 떠나면 그 스페이스의 `assignee_id`를 비운다 (복합 FK, 정책 2.6 제4항).
+
+## S3 파일·폴더 (`V4__drive.sql`)
+
+```mermaid
+erDiagram
+    space ||--o{ drive_item : "파일·폴더"
+    drive_item ||--o{ drive_item : "하위 항목 (parent_id)"
+    drive_item |o--o{ drive_item : "원래 폴더 (original_parent_id)"
+    users ||--o{ drive_item : "올린 사람·휴지통으로 옮긴 사람"
+
+    drive_item {
+        bigint id PK
+        bigint space_id FK "(space_id, parent_id) 복합 FK: 부모는 같은 스페이스"
+        bigint parent_id FK "null = 최상위. 휴지통 항목은 null(트리에서 뗌)"
+        varchar type "FILE | FOLDER. 부모는 폴더만 (트리거)"
+        varchar name "NFC, 1~255자"
+        text name_key "NFC + 소문자. (space_id, parent_id, name_key) 부분 유니크(휴지통 제외, NULLS NOT DISTINCT)"
+        int depth "최상위 1, 폴더는 10까지"
+        bigint size "파일만"
+        varchar content_type "현재 확장자 기준"
+        varchar detected_type "업로드 때 내용으로 판별 (Tika)"
+        boolean inline_viewable "바로 열기 가능 (확장자와 실제 형식 일치, PDF·이미지)"
+        varchar storage_key UK "spaces/{spaceId}/files/{uuid}"
+        bigint uploader_id FK
+        timestamptz trashed_at "직접 휴지통으로 옮긴 항목에만"
+        bigint trashed_by FK
+        bigint original_parent_id FK "복구할 폴더. 영구 삭제되면 null"
+    }
+
+    storage_deletion {
+        bigint id PK
+        varchar storage_key "객체 하나 (둘 중 하나)"
+        varchar key_prefix "스페이스 영구 삭제: spaces/{spaceId}/"
+        timestamptz created_at
+        int attempts
+        varchar last_error
+    }
+```
+
+- 휴지통 표시(`trashed_at`)는 직접 지운 항목에만 하고, 그 항목을 트리에서 떼어 `parent_id`를 비운다. 하위 항목은 그 항목 아래에 그대로 있어 함께 휴지통에 있는 것이 된다. 떼어 두므로 원래 폴더를 옮기거나 영구 삭제해도 따로 지운 항목은 영향을 받지 않는다 (`DESIGN_REVIEW.md` 6.8).
+- `storage_deletion`은 작업 대기열이다. 감사 필드와 `deleted_at`이 없고, 객체 삭제가 끝나면 행을 지운다 (AGENTS.md 엔티티 예외).
+- 영구 삭제 작업(S2)은 스페이스를 지울 때 `drive_item`을 함께 지우고 키 접두어를 대기열에 넣는다. 올린 파일이 남아 있는 탈퇴자의 이름은 지우지 않는다 (정책 7.9).
 - 보관 중인 그룹의 멤버가 탈퇴하면 그 그룹의 멤버 행도 지우고 스페이스 담당을 비운다. 복구된 그룹에 탈퇴자가 다시 나오지 않게 하려는 것이다. 그 그룹의 OWNER인 경우는 OWNER 복합 FK 때문에 멤버 행을 그대로 두며, 그 그룹은 복구하지 않는다 (정책 2.6 제5항).
 
 ### DB 밖에 두는 상태 (Redis)
