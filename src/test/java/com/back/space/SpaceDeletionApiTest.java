@@ -96,16 +96,20 @@ class SpaceDeletionApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("SDEL-07: 스페이스를 볼 수 없는 사람에게는 404, 볼 수 있지만 OWNER·담당자가 아닌 인수자에게는 403")
+    @DisplayName("SDEL-07: 스페이스를 볼 수 없는 사람의 요청·승인·거절은 404, 볼 수 있지만 OWNER·담당자가 아닌 인수자의 승인·거절은 403")
     void forbidden() throws Exception {
         request(s, DAVE).andExpect(status().isNotFound());
         request(s, MALLORY).andExpect(status().isNotFound());
         request(s, ALICE).andExpect(status().isOk());
-        approve(s, CAROL).andExpect(status().isNotFound());
-        post("/api/v1/spaces/" + s + "/deletion-request/reject", CAROL, body("")).andExpect(status().isNotFound());
+        for (String outsider : List.of(DAVE, MALLORY, CAROL)) {
+            approve(s, outsider).andExpect(status().isNotFound());
+            reject(s, outsider).andExpect(status().isNotFound());
+        }
 
         handoverStatus.start(s, g, bob, carol);
         approve(s, CAROL).andExpect(status().isForbidden());
+        reject(s, CAROL).andExpect(status().isForbidden());
+        assertThat(lastRequest(s).get("status")).isEqualTo("PENDING");
     }
 
     @Test
@@ -293,6 +297,10 @@ class SpaceDeletionApiTest extends GroupTestSupport {
 
     private ResultActions approve(long spaceId, String email) throws Exception {
         return post("/api/v1/spaces/" + spaceId + "/deletion-request/approve", email, body(REAUTH));
+    }
+
+    private ResultActions reject(long spaceId, String email) throws Exception {
+        return post("/api/v1/spaces/" + spaceId + "/deletion-request/reject", email, body(""));
     }
 
     private Map<String, Object> lastRequest(long spaceId) {

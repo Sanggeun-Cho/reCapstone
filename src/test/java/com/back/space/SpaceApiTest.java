@@ -106,7 +106,7 @@ class SpaceApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("SPC-09: 관계없는 멤버는 그룹의 스페이스 목록을 볼 수 없고(403), 스페이스는 없는 것처럼 404 (정책 4.3 제3항)")
+    @DisplayName("SPC-09: 관계없는 멤버는 그룹의 스페이스 목록을 볼 수 없고(403), 스페이스는 없는 것처럼 404 (정책 4.3 제3항, 제5항)")
     void unrelatedMember() throws Exception {
         get("/api/v1/groups/" + g + "/spaces", DAVE).andExpect(status().isForbidden());
         get("/api/v1/spaces/" + s, DAVE)

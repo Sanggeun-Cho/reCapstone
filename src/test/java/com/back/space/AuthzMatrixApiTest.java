@@ -1,12 +1,14 @@
 package com.back.space;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.back.group.api.InvitationDto;
 import com.back.support.GroupTestSupport;
 import com.jayway.jsonpath.JsonPath;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -84,6 +86,32 @@ class AuthzMatrixApiTest extends GroupTestSupport {
         int actual = call(row.method(), fill(row.path(), ids), email(user), row.body() == null ? null : fill(row.body(), ids))
                 .andReturn().getResponse().getStatus();
 
+        assertCell(feature, user, expected, actual);
+    }
+
+    /** "스페이스 삭제 요청·승인" 행의 승인 칸. 상대방이 먼저 요청해 두어야 하므로 매트릭스 표와 따로 확인한다. */
+    static Stream<Arguments> approvalCells() {
+        int[] expected = {401, 404, 404, 403, OK, OK};
+        return IntStream.range(0, USERS.length).mapToObj(i -> Arguments.of(USERS[i], expected[i]));
+    }
+
+    @ParameterizedTest(name = "스페이스 삭제 승인 / {0} → {1}")
+    @MethodSource("approvalCells")
+    @DisplayName("AUTHZ-01: 스페이스 삭제 승인 (상대방의 요청이 대기 중일 때)")
+    void deletionApproval(String user, int expected) throws Exception {
+        String requester = user.equals("alice") ? BOB : ALICE;
+        post("/api/v1/spaces/" + s + "/deletion-request", requester, "{" + REAUTH + "}").andExpect(status().isOk());
+        if (user.equals("carol")) {
+            handoverStatus.start(s, g, bob, carol);
+        }
+
+        int actual = call(HttpMethod.POST, "/api/v1/spaces/" + s + "/deletion-request/approve", email(user),
+                "{" + REAUTH + "}").andReturn().getResponse().getStatus();
+
+        assertCell("스페이스 삭제 승인", user, expected, actual);
+    }
+
+    private static void assertCell(String feature, String user, int expected, int actual) {
         if (expected == OK) {
             assertThat(actual / 100).as("%s / %s: %d", feature, user, actual).isEqualTo(2);
         } else {
