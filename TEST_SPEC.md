@@ -328,7 +328,7 @@
 
 ## 6. 파일 · 폴더 (FILE / TRASH)
 
-> 기준: [`정책.md`](./정책.md) 제8장. 저장소 테스트 환경은 `DESIGN_REVIEW.md` 6.8. 경계값과 실패 경로, 테스트 클래스 대응은 이슈 [#13](https://github.com/Sanggeun-Cho/reCapstone/issues/13)의 테스트 명세에 있다.
+> 기준: [`정책.md`](./정책.md) 제8장. 저장소는 RustFS 컨테이너, 적합성 테스트(`s3-conformance`, 필수 아님)는 AWS 에뮬레이터 (`DESIGN_REVIEW.md` 6.8). 경계값과 실패 경로, 테스트 클래스 대응은 이슈 [#13](https://github.com/Sanggeun-Cho/reCapstone/issues/13)의 테스트 명세에 있다.
 
 ### 6.1 업로드와 목록 (FILE)
 | ID | 레벨 | 전제 | 행위 | 기대 결과 |
