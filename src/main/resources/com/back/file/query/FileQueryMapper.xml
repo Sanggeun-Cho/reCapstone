@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.back.file.query.FileQueryMapper">
+
+    <sql id="itemColumns">
+        i.id, i.type, i.name, i.parent_id, i.size, i.content_type, i.inline_viewable,
+        u.name AS uploader_name, coalesce(u.deleted_at IS NOT NULL, FALSE) AS uploader_withdrawn, i.created_at
+    </sql>
+
+    <select id="findChildren" resultType="com.back.file.query.FileQueryMapper$ItemRow">
+        SELECT <include refid="itemColumns"/>
+        FROM drive_item i
+                 LEFT JOIN users u ON u.id = i.uploader_id
+        WHERE i.space_id = #{spaceId}
+          AND i.trashed_at IS NULL
+          AND i.deleted_at IS NULL
+        <choose>
+            <when test="parentId == null">AND i.parent_id IS NULL</when>
+            <otherwise>AND i.parent_id = #{parentId}</otherwise>
+        </choose>
+        ORDER BY i.type = 'FOLDER' DESC, i.name_key COLLATE "C", i.id
+    </select>
+
+    <select id="findItem" resultType="com.back.file.query.FileQueryMapper$ItemRow">
+        SELECT <include refid="itemColumns"/>
+        FROM drive_item i
+                 LEFT JOIN users u ON u.id = i.uploader_id
+        WHERE i.id = #{itemId}
+          AND i.deleted_at IS NULL
+    </select>
+
+    <select id="findPath" resultType="com.back.file.query.FileQueryMapper$PathRow">
+        WITH RECURSIVE up AS (SELECT p.id, p.name, p.parent_id, 1 AS level
+                              FROM drive_item p
+                              WHERE p.id = (SELECT parent_id FROM drive_item WHERE id = #{itemId})
+                              UNION ALL
+                              SELECT p.id, p.name, p.parent_id, up.level + 1
+                              FROM drive_item p
+                                       JOIN up ON p.id = up.parent_id)
+        SELECT id, name
+        FROM up
+        ORDER BY level DESC
+    </select>
+
+    <!-- 원래 경로: 원래 폴더부터 위로 올라가며, 휴지통 항목(트리에서 떼어 둠)은 원래 폴더를 따라간다 -->
+    <select id="findTrash" resultType="com.back.file.query.FileQueryMapper$TrashRow">
+        SELECT t.id, t.type, t.name, coalesce(path.original_path, '/') AS original_path, t.trashed_at
+        FROM drive_item t
+                 LEFT JOIN LATERAL (
+            WITH RECURSIVE up AS (SELECT p.id, p.name,
+                                         CASE WHEN p.trashed_at IS NULL THEN p.parent_id ELSE p.original_parent_id END AS next_id,
+                                         1 AS level
+                                  FROM drive_item p
+                                  WHERE p.id = t.original_parent_id
+                                  UNION ALL
+                                  SELECT p.id, p.name,
+                                         CASE WHEN p.trashed_at IS NULL THEN p.parent_id ELSE p.original_parent_id END,
+                                         up.level + 1
+                                  FROM drive_item p
+                                           JOIN up ON p.id = up.next_id
+                                  WHERE up.level &lt; 20)
+            SELECT '/' || string_agg(name, '/' ORDER BY level DESC) AS original_path
+            FROM up
+            ) path ON TRUE
+        WHERE t.space_id = #{spaceId}
+          AND t.trashed_at IS NOT NULL
+          AND t.deleted_at IS NULL
+        ORDER BY t.trashed_at DESC, t.id DESC
+    </select>
+</mapper>
