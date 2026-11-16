@@ -117,6 +117,20 @@ class FileReplaceApiTest extends FileTestSupport {
     }
 
     @Test
+    @DisplayName("FILE-29f2: REPLACE는 같은 요청이 방금 만든 파일을 덮어쓰지 않는다 (a.pdf, a.pdf, a (1).pdf)")
+    void replaceDoesNotOverwriteOwnUpload() throws Exception {
+        long x = uploadOne(null, "a.pdf", "v0");
+        upload(BOB, s, List.of(file("a.pdf", "1"), file("a.pdf", "2"), file("a (1).pdf", "3")), REPLACE)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.created[*].name", contains("a.pdf", "a (1).pdf", "a (1) (1).pdf")))
+                .andExpect(jsonPath("$.created[*].replaced", contains(true, false, false)))
+                .andExpect(jsonPath("$.created[0].id").value(x));
+        // 휴지통에는 요청 전에 있던 a.pdf의 이전 내용만 들어간다
+        assertThat(trashed()).singleElement().satisfies(previous -> assertThat(previous.getName()).isEqualTo("a.pdf"));
+        assertThat(itemRepository.count()).isEqualTo(4);
+    }
+
+    @Test
     @DisplayName("FILE-29g: onConflict를 생략하면 RENAME (a (1).pdf)")
     void defaultRename() throws Exception {
         uploadOne(null, "a.pdf", "v1");

@@ -69,7 +69,7 @@ class FileUploadApiTest extends FileTestSupport {
         trash(trashed);
         assign(alice, s2, bob);
         long other = as(bob, () -> fileService.createFolder(bob, s2,
-                new com.back.file.api.FileDto.FolderReq(null, "O")).id());
+                new com.back.file.api.FileDto.FolderReq(null, "O")));
         long aFile = uploadOne(null, "f.txt", "x");
 
         upload(BOB, s, List.of(file("a.txt", "x")), "folderId=" + trashed).andExpect(status().isNotFound());
@@ -226,6 +226,18 @@ class FileUploadApiTest extends FileTestSupport {
         upload(ANON, s, file("a.txt", "x")).andExpect(status().isUnauthorized());
         assertThat(itemRepository.count()).isZero();
         assertThat(objectCount(s)).isZero();
+    }
+
+    @Test
+    @DisplayName("볼 수 없는 스페이스는 개수·크기를 넘겨도 404 (권한을 먼저 본다, 정책 4.3 제5항)")
+    void permissionBeforeLimits() throws Exception {
+        List<MockMultipartFile> files = new ArrayList<>();
+        for (int i = 0; i < 21; i++) {
+            files.add(file("f" + i + ".txt", "x"));
+        }
+        upload(DAVE, s, files).andExpect(status().isNotFound());
+        upload(MALLORY, s, sized("big.bin", 200L * 1024 * 1024 + 1)).andExpect(status().isNotFound());
+        upload(ALICE, s, files).andExpect(status().isForbidden());
     }
 
     @Test

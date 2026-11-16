@@ -157,7 +157,7 @@ class FolderApiTest extends FileTestSupport {
     void otherSpace() throws Exception {
         assign(alice, s2, bob);
         long other = as(bob, () -> fileService.createFolder(bob, s2,
-                new com.back.file.api.FileDto.FolderReq(null, "O")).id());
+                new com.back.file.api.FileDto.FolderReq(null, "O")));
         long f = uploadOne(null, "f.txt", "x");
         move(f, other).andExpect(status().isNotFound());
         assertThat(item(f).getSpaceId()).isEqualTo(s);

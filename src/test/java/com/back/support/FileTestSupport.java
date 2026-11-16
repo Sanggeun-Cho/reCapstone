@@ -116,7 +116,7 @@ public abstract class FileTestSupport extends GroupTestSupport {
     // --- 서비스로 바로 만드는 픽스처 (bob, S) ---
 
     protected long folder(Long parentId, String name) {
-        return as(bob, () -> fileService.createFolder(bob, s, new FileDto.FolderReq(parentId, name)).id());
+        return as(bob, () -> fileService.createFolder(bob, s, new FileDto.FolderReq(parentId, name)));
     }
 
     /** 깊이 {@code depth}인 폴더를 만들고 가장 깊은 폴더 id를 돌려준다. */

@@ -33,6 +33,12 @@ public class ProbeController {
         throw new IllegalStateException("boom");
     }
 
+    /** 서블릿이 multipart 크기 초과로 요청을 거부한 것과 같은 예외 (MockMvc는 서블릿 크기 제한을 거치지 않는다) */
+    @GetMapping("/upload-too-large")
+    public void uploadTooLarge() {
+        throw new org.springframework.web.multipart.MaxUploadSizeExceededException(500L * 1024 * 1024);
+    }
+
     @PostMapping("/validation")
     public void validation(@Valid @RequestBody ProbeReq req) {
     }
