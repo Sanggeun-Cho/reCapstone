@@ -6,8 +6,6 @@ import com.back.file.domain.DriveItem;
 import com.back.file.domain.DriveItemRepository;
 import com.back.file.event.FileUploaded;
 import com.back.file.support.ItemNames;
-import com.back.space.application.SpaceAccessPolicy;
-import com.back.space.application.SpaceAccessPolicy.Action;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,7 +35,6 @@ class UploadRecorder {
     }
 
     private final DriveItemRepository repository;
-    private final SpaceAccessPolicy accessPolicy;
     private final DriveItems items;
     private final ApplicationEventPublisher events;
     private final Clock clock;
@@ -46,15 +43,16 @@ class UploadRecorder {
     public Result record(long userId, long spaceId, Long folderId, FileDto.OnConflict onConflict,
             List<Uploaded> uploads) {
         // 저장소 전송 중에 담당자가 바뀌었거나 인계가 시작되었으면 저장하지 않는다 (정책 8.2 제5항)
-        accessPolicy.checkAndLock(userId, spaceId, Action.WRITE);
-        items.requireNoHandover(spaceId);
+        items.lockForWrite(userId, spaceId);
         DriveItem folder = items.folderOrRoot(spaceId, folderId);
         int depth = DriveItems.depthUnder(folder);
 
         Instant now = clock.instant();
         Set<String> taken = new HashSet<>(repository.nameKeysIn(spaceId, folderId));
-        // 같은 요청 안에서 이름이 겹치는 파일끼리는 onConflict와 관계없이 번호를 붙인다
+        // 같은 요청 안에서 이름이 겹치는 파일끼리는 onConflict와 관계없이 번호를 붙인다.
+        // REPLACE는 요청 전에 있던 파일에만 적용한다. 이 요청이 만든 파일(번호가 붙은 이름 포함)은 덮어쓰지 않는다
         Set<String> requestKeys = new HashSet<>();
+        Set<Long> createdIds = new HashSet<>();
         List<FileDto.CreatedRes> created = new ArrayList<>();
         List<FileDto.FailedRes> failed = new ArrayList<>();
         List<String> rejected = new ArrayList<>();
@@ -63,7 +61,8 @@ class UploadRecorder {
             String key = ItemNames.key(upload.name());
             boolean firstInRequest = requestKeys.add(key);
             if (onConflict == FileDto.OnConflict.REPLACE && firstInRequest) {
-                Optional<DriveItem> existing = repository.findByName(spaceId, folderId, key);
+                Optional<DriveItem> existing = repository.findByName(spaceId, folderId, key)
+                        .filter(item -> !createdIds.contains(item.getId()));
                 if (existing.isPresent()) {
                     DriveItem target = existing.get();
                     if (target.isFolder()) {
@@ -72,6 +71,7 @@ class UploadRecorder {
                         continue;
                     }
                     replace(target, upload.content(), userId, now);
+                    createdIds.add(target.getId());
                     created.add(new FileDto.CreatedRes(target.getId(), target.getName(), true));
                     events.publishEvent(new FileUploaded(spaceId, target.getId()));
                     continue;
@@ -80,6 +80,7 @@ class UploadRecorder {
             String name = ItemNames.available(upload.name(), taken);
             DriveItem file = repository.save(DriveItem.file(spaceId, folderId, depth, name, upload.content()));
             taken.add(file.getNameKey());
+            createdIds.add(file.getId());
             created.add(new FileDto.CreatedRes(file.getId(), file.getName(), false));
             events.publishEvent(new FileUploaded(spaceId, file.getId()));
         }

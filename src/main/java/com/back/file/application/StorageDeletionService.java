@@ -16,8 +16,4 @@ public interface StorageDeletionService {
 
     /** 대기열에 남은 삭제를 다시 시도한다. 처리한 건수를 돌려준다. */
     int retryPending();
-
-    static String spacePrefix(long spaceId) {
-        return "spaces/" + spaceId + "/";
-    }
 }

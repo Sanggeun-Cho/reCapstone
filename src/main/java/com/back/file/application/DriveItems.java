@@ -5,7 +5,10 @@ import com.back.common.error.ErrorCode;
 import com.back.file.domain.DriveItem;
 import com.back.file.domain.DriveItemRepository;
 import com.back.handover.application.HandoverStatus;
+import com.back.space.application.SpaceAccessPolicy;
+import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,16 +20,12 @@ import org.springframework.stereotype.Component;
 class DriveItems {
 
     private final DriveItemRepository repository;
+    private final SpaceAccessPolicy accessPolicy;
     private final HandoverStatus handoverStatus;
 
-    /** 휴지통에 있지 않은 항목. */
+    /** 휴지통에 있지 않은 항목 (자신과 조상 모두 휴지통 표시가 없음). */
     DriveItem active(long spaceId, long itemId) {
-        DriveItem item = repository.findByIdAndSpaceId(itemId, spaceId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
-        if (!repository.hasNoTrashedAncestor(itemId, spaceId)) {
-            throw new BusinessException(ErrorCode.NOT_FOUND);
-        }
-        return item;
+        return find(spaceId, itemId, found -> repository.isActive(itemId, spaceId));
     }
 
     /** 대상 폴더. {@code folderId}가 null이면 최상위(null). 파일이면 400 {@code INVALID_MOVE_TARGET}. */
@@ -43,18 +42,40 @@ class DriveItems {
 
     /** 휴지통 목록에 보이는 항목(직접 휴지통으로 옮긴 항목). 폴더와 함께 들어간 하위 항목은 404. */
     DriveItem trashed(long spaceId, long itemId) {
-        DriveItem item = repository.findByIdAndSpaceId(itemId, spaceId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
-        if (!item.isTrashed()) {
-            throw new BusinessException(ErrorCode.NOT_FOUND);
-        }
-        return item;
+        return find(spaceId, itemId, DriveItem::isTrashed);
     }
 
-    /** 인계가 진행되는 동안에는 파일과 휴지통을 쓸 수 없다 (정책 4.2, 5.2, 8.5 제6항). */
+    private DriveItem find(long spaceId, long itemId, Predicate<DriveItem> visible) {
+        return repository.findByIdAndSpaceId(itemId, spaceId)
+                .filter(visible)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+    }
+
+    /**
+     * 쓰기 전 공통 검사: 그룹 → 스페이스 행을 잠그고(S2와 같은 순서) 담당자인지 확인한 뒤, 인계가 진행 중이면 409
+     * (정책 4.2, 5.2, 8.5 제6항). 스페이스 행 잠금이 같은 스페이스의 이름 결정을 한 줄로 세운다.
+     */
+    void lockForWrite(long userId, long spaceId) {
+        accessPolicy.checkAndLock(userId, spaceId, SpaceAccessPolicy.Action.WRITE);
+        requireNoHandover(spaceId);
+    }
+
+    /** 인계가 진행되는 동안에는 파일과 휴지통을 쓸 수 없다. 읽기는 허용한다. */
     void requireNoHandover(long spaceId) {
         if (handoverStatus.isInProgress(spaceId)) {
             throw new BusinessException(ErrorCode.HANDOVER_IN_PROGRESS);
+        }
+    }
+
+    /**
+     * 바뀐 이름을 DB에 반영한다. 이름은 스페이스 잠금 안에서 미리 확인하므로 유니크 인덱스에 걸리는 일은 없어야 하지만,
+     * 걸리면 500이 아니라 {@code NAME_CONFLICT}로 답한다.
+     */
+    void flushNames() {
+        try {
+            repository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(ErrorCode.NAME_CONFLICT);
         }
     }
 

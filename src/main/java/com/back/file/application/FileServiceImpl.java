@@ -6,7 +6,6 @@ import com.back.file.FileProperties;
 import com.back.file.api.FileDto;
 import com.back.file.domain.DriveItem;
 import com.back.file.domain.DriveItemRepository;
-import com.back.file.query.FileQueryMapper;
 import com.back.file.storage.FileStorage;
 import com.back.file.support.ItemNames;
 import com.back.space.application.SpaceAccessPolicy;
@@ -17,7 +16,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class FileServiceImpl implements FileService {
 
     private final DriveItemRepository repository;
-    private final FileQueryMapper queryMapper;
     private final SpaceAccessPolicy accessPolicy;
     private final DriveItems items;
     private final FileStorage storage;
@@ -40,8 +37,8 @@ public class FileServiceImpl implements FileService {
 
     @Override
     @Transactional
-    public FileDto.ItemRes createFolder(long userId, long spaceId, FileDto.FolderReq req) {
-        lockForWrite(userId, spaceId);
+    public long createFolder(long userId, long spaceId, FileDto.FolderReq req) {
+        items.lockForWrite(userId, spaceId);
         DriveItem parent = items.folderOrRoot(spaceId, req.parentId());
         int depth = DriveItems.depthUnder(parent);
         if (depth > DriveItem.MAX_FOLDER_DEPTH) {
@@ -49,31 +46,32 @@ public class FileServiceImpl implements FileService {
         }
         String name = ItemNames.validate(req.name());
         requireNameFree(spaceId, DriveItems.idOf(parent), name, null);
-        DriveItem folder = saveUnique(DriveItem.folder(spaceId, DriveItems.idOf(parent), depth, name));
-        return itemRes(folder.getId());
+        DriveItem folder = repository.save(DriveItem.folder(spaceId, DriveItems.idOf(parent), depth, name));
+        items.flushNames();
+        return folder.getId();
     }
 
     @Override
     @Transactional
-    public FileDto.ItemRes rename(long userId, long spaceId, long itemId, FileDto.RenameReq req) {
-        lockForWrite(userId, spaceId);
+    public long rename(long userId, long spaceId, long itemId, FileDto.RenameReq req) {
+        items.lockForWrite(userId, spaceId);
         DriveItem item = items.active(spaceId, itemId);
         String name = ItemNames.validate(req.name());
         requireNameFree(spaceId, item.getParentId(), name, item.getId());
         item.rename(name);
-        repository.flush();
-        return itemRes(itemId);
+        items.flushNames();
+        return itemId;
     }
 
     @Override
     @Transactional
-    public FileDto.ItemRes move(long userId, long spaceId, long itemId, FileDto.MoveReq req) {
-        lockForWrite(userId, spaceId);
+    public long move(long userId, long spaceId, long itemId, FileDto.MoveReq req) {
+        items.lockForWrite(userId, spaceId);
         DriveItem item = items.active(spaceId, itemId);
         DriveItem target = items.folderOrRoot(spaceId, req.targetFolderId());
         Long targetId = DriveItems.idOf(target);
         if (Objects.equals(targetId, item.getParentId())) {
-            return itemRes(itemId);
+            return itemId;
         }
         // 폴더를 자기 자신이나 그 하위 폴더로 옮길 수 없다 (정책 8.3 제4항)
         if (item.isFolder() && target != null && repository.ancestorIds(target.getId()).contains(item.getId())) {
@@ -87,17 +85,17 @@ public class FileServiceImpl implements FileService {
         requireNameFree(spaceId, targetId, item.getName(), item.getId());
         int delta = depth - item.getDepth();
         item.moveTo(targetId, depth);
+        items.flushNames();
         if (delta != 0) {
             repository.shiftDescendantDepth(itemId, delta);
         }
-        repository.flush();
-        return itemRes(itemId);
+        return itemId;
     }
 
     @Override
     @Transactional
     public FileDto.TrashedRes trash(long userId, long spaceId, long itemId) {
-        lockForWrite(userId, spaceId);
+        items.lockForWrite(userId, spaceId);
         DriveItem item = items.active(spaceId, itemId);
         int moved = repository.subtreeIds(itemId).size();
         item.trash(userId, clock.instant());
@@ -128,11 +126,6 @@ public class FileServiceImpl implements FileService {
         return type + "; filename*=UTF-8''" + encoded;
     }
 
-    private void lockForWrite(long userId, long spaceId) {
-        accessPolicy.checkAndLock(userId, spaceId, Action.WRITE);
-        items.requireNoHandover(spaceId);
-    }
-
     /** 이름 변경·이동·폴더 생성에서는 겹치면 거부한다 (정책 8.3 제3항). 자기 자신과는 겹치지 않는다. */
     private void requireNameFree(long spaceId, Long parentId, String name, Long selfId) {
         repository.findByName(spaceId, parentId, ItemNames.key(name))
@@ -140,18 +133,5 @@ public class FileServiceImpl implements FileService {
                 .ifPresent(existing -> {
                     throw new BusinessException(ErrorCode.NAME_CONFLICT);
                 });
-    }
-
-    private DriveItem saveUnique(DriveItem item) {
-        try {
-            return repository.saveAndFlush(item);
-        } catch (DataIntegrityViolationException e) {
-            throw new BusinessException(ErrorCode.NAME_CONFLICT);
-        }
-    }
-
-    private FileDto.ItemRes itemRes(long itemId) {
-        return queryMapper.findItem(itemId).map(FileQueries::toRes)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
     }
 }

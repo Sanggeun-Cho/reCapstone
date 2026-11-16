@@ -11,6 +11,9 @@ public interface FileQueryService {
 
     FileDto.DetailRes detail(long userId, long spaceId, long itemId);
 
+    /** 항목 한 줄 (쓰기 응답용). 휴지통에 있지 않은 항목만. */
+    FileDto.ItemRes item(long userId, long spaceId, long itemId);
+
     /** 휴지통 (담당자만, 인계 중에는 409). */
     List<FileDto.TrashItemRes> trash(long userId, long spaceId);
 }

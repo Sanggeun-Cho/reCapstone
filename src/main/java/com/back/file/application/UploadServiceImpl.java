@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import com.back.file.storage.StorageKeys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -56,9 +56,10 @@ public class UploadServiceImpl implements UploadService {
     public FileDto.UploadRes upload(long userId, long spaceId, Long folderId, FileDto.OnConflict onConflict,
             List<MultipartFile> files) {
         List<MultipartFile> parts = files == null ? List.of() : files;
-        checkLimits(parts);
+        // 볼 수 없는 스페이스는 크기·개수와 관계없이 404다 (정책 4.3 제5항). 권한을 먼저 본다
         accessPolicy.checkAndGet(userId, spaceId, Action.WRITE);
         items.requireNoHandover(spaceId);
+        checkLimits(parts);
         items.folderOrRoot(spaceId, folderId);
         FileDto.OnConflict mode = onConflict == null ? FileDto.OnConflict.RENAME : onConflict;
 
@@ -127,7 +128,7 @@ public class UploadServiceImpl implements UploadService {
 
     private UploadRecorder.Uploaded send(long userId, long spaceId, String requestName, String name,
             MultipartFile part) throws IOException {
-        String key = "spaces/" + spaceId + "/files/" + UUID.randomUUID();
+        String key = StorageKeys.newFileKey(spaceId);
         try (InputStream in = part.getInputStream()) {
             byte[] head = ContentTypeResolver.readHead(in);
             String detected = ContentTypeResolver.detect(head);

@@ -26,7 +26,7 @@ public class StorageConfig {
                 .region(Region.of(properties.region()))
                 .credentialsProvider(credentials(properties))
                 .forcePathStyle(properties.pathStyle());
-        if (!isBlank(properties.endpoint())) {
+        if (!FileProperties.isBlank(properties.endpoint())) {
             builder.endpointOverride(URI.create(properties.endpoint()));
         }
         return builder.build();
@@ -38,7 +38,7 @@ public class StorageConfig {
                 .region(Region.of(properties.region()))
                 .credentialsProvider(credentials(properties))
                 .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(properties.pathStyle()).build());
-        if (!isBlank(properties.endpoint())) {
+        if (!FileProperties.isBlank(properties.endpoint())) {
             builder.endpointOverride(URI.create(properties.endpoint()));
         }
         return builder.build();
@@ -54,14 +54,10 @@ public class StorageConfig {
     }
 
     private static AwsCredentialsProvider credentials(FileProperties properties) {
-        if (isBlank(properties.accessKey())) {
+        if (FileProperties.isBlank(properties.accessKey())) {
             return DefaultCredentialsProvider.builder().build();
         }
         return StaticCredentialsProvider.create(
                 AwsBasicCredentials.create(properties.accessKey(), properties.secretKey()));
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 }

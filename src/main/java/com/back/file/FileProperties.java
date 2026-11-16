@@ -41,7 +41,7 @@ public record FileProperties(String endpoint, String region, String bucket, Stri
         orphanGrace = orphanGrace == null ? Duration.ofHours(1) : orphanGrace;
     }
 
-    static boolean isBlank(String value) {
+    public static boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
 }

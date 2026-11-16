@@ -48,6 +48,11 @@ public class FileQueryServiceImpl implements FileQueryService {
     }
 
     @Override
+    public FileDto.ItemRes item(long userId, long spaceId, long itemId) {
+        return detail(userId, spaceId, itemId).item();
+    }
+
+    @Override
     public List<FileDto.TrashItemRes> trash(long userId, long spaceId) {
         accessPolicy.checkAndGet(userId, spaceId, Action.WRITE);
         items.requireNoHandover(spaceId);

@@ -23,7 +23,7 @@ public interface DriveItemRepository extends JpaRepository<DriveItem, Long> {
             )
             SELECT count(*) = 0 FROM up WHERE trashed_at IS NOT NULL
             """, nativeQuery = true)
-    boolean hasNoTrashedAncestor(long id, long spaceId);
+    boolean isActive(long id, long spaceId);
 
     /** 폴더의 조상 id (자기 자신 포함). 이동 대상이 자기 하위인지 판단한다. */
     @Query(value = """
@@ -102,18 +102,39 @@ public interface DriveItemRepository extends JpaRepository<DriveItem, Long> {
 
     boolean existsBySpaceIdAndTrashedAtIsNotNull(long spaceId);
 
-    /** 보관 기간이 지난 휴지통 항목 (정책 8.5 제5항). */
-    @Query("select i from DriveItem i where i.trashedAt <= :cutoff")
-    List<DriveItem> findTrashedBefore(Instant cutoff);
+    /** 보관 기간이 지난 휴지통 항목이 있는 스페이스 (정책 8.5 제5항). */
+    @Query("select distinct i.spaceId from DriveItem i where i.trashedAt <= :cutoff")
+    List<Long> findSpaceIdsWithTrashBefore(Instant cutoff);
 
-    /** 지울 파일의 저장소 키. */
-    @Query("select i from DriveItem i where i.id in :ids and i.type = com.back.file.domain.DriveItem.Type.FILE")
-    List<DriveItem> findFilesIn(List<Long> ids);
+    /** 스페이스에서 보관 기간이 지난 휴지통 항목. 스페이스 행을 잠근 뒤에 읽는다. */
+    @Query("select i.id from DriveItem i where i.spaceId = :spaceId and i.trashedAt <= :cutoff")
+    List<Long> findTrashedBefore(long spaceId, Instant cutoff);
 
-    /** 한 문장으로 지운다. 자기 참조 FK는 문장이 끝날 때 검사하므로 하위 항목까지 한 번에 지울 수 있다. */
+    /** 항목과 그 하위 전체 중 파일 (영구 삭제할 저장소 키와 이벤트용). */
+    @Query(value = """
+            WITH RECURSIVE down AS (
+                SELECT id FROM drive_item WHERE id = :id
+                UNION ALL
+                SELECT c.id FROM drive_item c JOIN down ON c.parent_id = down.id
+            )
+            SELECT i.* FROM drive_item i WHERE i.id IN (SELECT id FROM down) AND i.type = 'FILE'
+            """, nativeQuery = true)
+    List<DriveItem> findFilesInSubtree(long id);
+
+    /**
+     * 항목과 그 하위 전체를 한 문장으로 지운다. 자기 참조 FK는 문장이 끝날 때 검사하므로 한 번에 지울 수 있다.
+     * id 목록을 넘기지 않으므로 하위 항목이 많아도 바인딩 변수 수 제한에 걸리지 않는다.
+     */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query(value = "DELETE FROM drive_item WHERE id IN (:ids)", nativeQuery = true)
-    int deleteAllByIds(List<Long> ids);
+    @Query(value = """
+            WITH RECURSIVE down AS (
+                SELECT id FROM drive_item WHERE id = :id
+                UNION ALL
+                SELECT c.id FROM drive_item c JOIN down ON c.parent_id = down.id
+            )
+            DELETE FROM drive_item WHERE id IN (SELECT id FROM down)
+            """, nativeQuery = true)
+    int deleteSubtree(long id);
 
     @Query(value = "SELECT count(*) > 0 FROM drive_item WHERE storage_key = :storageKey", nativeQuery = true)
     boolean existsByStorageKey(String storageKey);

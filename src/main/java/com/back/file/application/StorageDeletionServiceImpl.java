@@ -3,6 +3,7 @@ package com.back.file.application;
 import com.back.file.domain.StorageDeletion;
 import com.back.file.domain.StorageDeletionRepository;
 import com.back.file.storage.FileStorage;
+import com.back.file.storage.StorageKeys;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
@@ -54,7 +55,7 @@ public class StorageDeletionServiceImpl implements StorageDeletionService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void enqueueSpaces(Collection<Long> spaceIds) {
         Instant now = clock.instant();
-        save(spaceIds.stream().map(id -> StorageDeletion.ofPrefix(StorageDeletionService.spacePrefix(id), now)).toList());
+        save(spaceIds.stream().map(id -> StorageDeletion.ofPrefix(StorageKeys.spacePrefix(id), now)).toList());
     }
 
     private void save(List<StorageDeletion> deletions) {

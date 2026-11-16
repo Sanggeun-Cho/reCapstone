@@ -64,19 +64,22 @@ public class FileController {
     @ResponseStatus(HttpStatus.CREATED)
     public FileDto.ItemRes createFolder(@AuthenticationPrincipal AuthUser user, @PathVariable long spaceId,
             @Valid @RequestBody FileDto.FolderReq req) {
-        return fileService.createFolder(user.userId(), spaceId, req);
+        long id = fileService.createFolder(user.userId(), spaceId, req);
+        return fileQueryService.item(user.userId(), spaceId, id);
     }
 
     @PatchMapping("/items/{itemId}")
     public FileDto.ItemRes rename(@AuthenticationPrincipal AuthUser user, @PathVariable long spaceId,
             @PathVariable long itemId, @Valid @RequestBody FileDto.RenameReq req) {
-        return fileService.rename(user.userId(), spaceId, itemId, req);
+        fileService.rename(user.userId(), spaceId, itemId, req);
+        return fileQueryService.item(user.userId(), spaceId, itemId);
     }
 
     @PostMapping("/items/{itemId}/move")
     public FileDto.ItemRes move(@AuthenticationPrincipal AuthUser user, @PathVariable long spaceId,
             @PathVariable long itemId, @Valid @RequestBody FileDto.MoveReq req) {
-        return fileService.move(user.userId(), spaceId, itemId, req);
+        fileService.move(user.userId(), spaceId, itemId, req);
+        return fileQueryService.item(user.userId(), spaceId, itemId);
     }
 
     /** 휴지통으로 옮긴다. 폴더면 하위 항목도 함께 옮기고 옮긴 개수를 돌려준다 */
