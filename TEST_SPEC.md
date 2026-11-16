@@ -382,7 +382,7 @@
 | NFR-01 | A | 업로드 크기 | 200MB 초과 시 413 |
 | NFR-02 | I | 한글 파일명 | 업로드·목록·다운로드 전 구간에서 깨지지 않음 |
 | NFR-03 | A | CORS | 허용된 origin만 통과, 자격 증명(쿠키) 허용. 와일드카드 origin은 쓰지 않음 |
-| NFR-04 | I | 목록 API 쿼리 수 | 목록 1회 조회당 쿼리 수가 상수 (N+1 없음) |
+| NFR-04 | I | 목록 API 쿼리 수 | 목록 1회 조회당 쿼리 수가 상수 (N+1 없음). 목록 대상 건수를 바꿔 두 번 조회했을 때 실행된 SQL 수가 같다. 측정은 테스트용 `QueryCounter`가 DB 연결을 감싸 JPA·MyBatis의 SQL을 모두 센다(배치는 1회). 대상 API는 [#14](https://github.com/Sanggeun-Cho/reCapstone/issues/14) 테스트 명세 |
 | NFR-05 | A | OpenAPI | `/v3/api-docs`에 모든 엔드포인트, 요청·응답·오류 스키마, enum 값 노출 |
 | NFR-06 | I | 마이그레이션 | 빈 DB에서 Flyway 적용 후 애플리케이션 기동 성공 |
 | NFR-07 | – | 로그 | 요청 ID 포함, 비밀번호·토큰은 로그에 남지 않음 |
