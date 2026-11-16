@@ -141,7 +141,7 @@ class AssignmentApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("SPC-16: 담당자 변경 이력은 OWNER와 현재 담당자가 시간순으로 보고, 관계없는 멤버는 403")
+    @DisplayName("SPC-16: 담당자 변경 이력은 OWNER와 현재 담당자가 시간순으로 보고, 이전 담당자와 관계없는 멤버에게는 404")
     void history() throws Exception {
         forced(s, null, "사망").andExpect(status().isOk());
         clock.advance(Duration.ofSeconds(1));

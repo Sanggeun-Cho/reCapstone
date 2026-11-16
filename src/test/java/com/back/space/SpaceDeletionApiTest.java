@@ -242,7 +242,7 @@ class SpaceDeletionApiTest extends GroupTestSupport {
     }
 
     @Test
-    @DisplayName("SDEL-17: 대기 요청은 OWNER와 담당자가 조회하고, 없으면 404, 관계없는 멤버는 403")
+    @DisplayName("SDEL-17: 대기 요청은 OWNER와 담당자가 조회하고, 없으면 404, 관계없는 멤버에게도 404")
     void viewPending() throws Exception {
         get("/api/v1/spaces/" + s + "/deletion-request", ALICE).andExpect(status().isNotFound());
         request(s, ALICE).andExpect(status().isOk());
