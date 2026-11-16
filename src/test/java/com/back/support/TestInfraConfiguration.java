@@ -2,17 +2,32 @@ package com.back.support;
 
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetupTest;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.DynamicPropertyRegistrar;
 
 /**
- * 모든 통합 테스트가 공유하는 테스트 전용 빈: 움직이는 시계, 메일 수신 서버(GreenMail), 탈퇴 차단 스위치, 인계 상태 대역.
+ * 모든 통합 테스트가 공유하는 테스트 전용 빈: 움직이는 시계, 메일 수신 서버(GreenMail), 탈퇴 차단 스위치, 인계 상태 대역, SQL 카운터.
  * 같은 구성을 공유해야 애플리케이션 컨텍스트와 컨테이너를 한 번만 띄운다.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestInfraConfiguration {
+
+    /** 컨텍스트가 하나뿐이라 한 인스턴스를 데이터소스 감싸기와 주입에 함께 쓴다. */
+    private static final QueryCounter QUERY_COUNTER = new QueryCounter();
+
+    @Bean
+    static QueryCounter queryCounter() {
+        return QUERY_COUNTER;
+    }
+
+    /** 데이터소스를 감싸 실행된 SQL 수를 센다. 빈 후처리기라 다른 빈보다 먼저 만들어지도록 static으로 둔다. */
+    @Bean
+    static BeanPostProcessor queryCountingDataSource() {
+        return QUERY_COUNTER.dataSourceWrapper();
+    }
 
     @Bean
     @Primary
