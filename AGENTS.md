@@ -76,9 +76,10 @@ AI 에이전트가 이 저장소에서 작업할 때 따르는 안내다. 대화
   - 입력 검증은 Bean Validation으로 한다.
   - 서버가 채우는 값(요청자 id 등)은 DTO에 넣지 않고 메서드 인자로 받는다.
 - 엔티티
-  - 모든 엔티티는 `deleted_at`(soft delete)과 감사 필드를 가진다. 예외는 다음 두 가지다.
+  - 모든 엔티티는 `deleted_at`(soft delete)과 감사 필드를 가진다. 예외는 다음 세 가지다.
     - `group_member`: 현재 멤버만 두고 행을 실제로 지우며, 기록은 `group_member_history`에 남긴다.
     - 추가 전용 이력 테이블(`group_member_history`, `assignment_change`): 감사 필드와 `deleted_at`을 두지 않는다. 행을 바꿀 수 없으므로 수정자·수정 시각·삭제 시각이 생길 수 없고, 누가 언제 남겼는지는 이력 자체의 `actor_id`·`occurred_at`이 담는다. 지우는 것은 영구 삭제 작업뿐이다 (`DESIGN_REVIEW.md` 6.5 구현 메모).
+    - 작업 대기열(`storage_deletion`): 처리가 끝난 행을 실제로 지운다. 감사 필드와 `deleted_at`을 두지 않고 `created_at`, 시도 횟수, 마지막 오류만 둔다.
   - 이력 테이블은 추가 전용이다. DB 트리거로 UPDATE와 DELETE를 거부한다.
   - DB FK 제약은 항상 둔다. JPA 연관관계는 애그리거트 내부에만 쓰고, 애그리거트 사이는 ID로 참조한다.
 - 트랜잭션
